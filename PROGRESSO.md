@@ -22,12 +22,14 @@ Atualizado em 16/11/2026.
 3. ~~Copiar/Abrir e busca~~ (pronta e validada pelo Mateus em 16/11/2026)
 4. ~~Editar, excluir, etiquetas e filtro por tipo~~ (pronta e validada pelo Mateus em 16/11/2026)
 5. ~~Atalhos, ordenação por mais usados e ajustes visuais~~ (pronta e validada pelo Mateus em 16/11/2026)
-6. Senhas: senha mestra e criptografia ← **antes dela: primeira revisão técnica no Gemini** (etapas 1 a 5 e regras do Firestore)
+6. Senhas: senha mestra e criptografia ← **próximo passo**. Revisão técnica 1 feita (aprovada com ressalvas; plano de criptografia aprovado). R-01 aplicado: acesso restrito ao UID do dono, regras publicadas em 16/11/2026 e conta do dono testada (lê e grava normalmente). Falta testar o bloqueio com uma segunda conta Google.
 7. Deploy no GitHub Pages em `vault.msr-dev.com.br` (passos na especificação)
 8. Integração com o Claude Code
 
 ## Pendências
 
 - Git iniciado (branch `main`, primeiro commit `81b449a`). Falta criar o repositório no GitHub e fazer o push (antes da etapa 7).
-- 🕓 Validação de campos nas regras do Firestore (tipos e campos permitidos) e testes das regras no emulador.
+- 🕓 Validação de campos nas regras do Firestore (tipos e campos permitidos) e testes das regras no emulador (exige instalar o `firebase-tools`).
+- 🕓 Revisão 1 (ver `REVISOES.md`): testar o bloqueio com uma segunda conta Google; CSP via `<meta>` na etapa 7 (D1); validação dos dados no script da etapa 8 (D2).
+- 👤 Conformidade (sinalizado pelo revisor técnico): logins de terceiros ficam registrados no Firebase Authentication (e-mail, nome, foto), mesmo sem acesso aos dados. Antes do deploy: verificar se dá para desligar o cadastro de contas novas no console; se não der, decidir entre avaliação de conformidade ou aviso na tela de login.
 - Backups do Firestore exigem o plano Blaze: usar o export em JSON (ideia para depois) como backup.

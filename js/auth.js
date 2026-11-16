@@ -8,6 +8,10 @@ import {
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
+// UID da única conta com acesso (o mesmo que está em firestore.rules).
+// Este aviso no app é só para a tela ficar clara: quem bloqueia de verdade são as regras.
+export const UID_DONO = "Q98yL89JwhMqdI2je6FxbNEKYm02";
+
 export const auth = getAuth(app);
 auth.languageCode = "pt-BR";
 

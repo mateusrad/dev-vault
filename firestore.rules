@@ -1,17 +1,25 @@
 rules_version = '2';
 
-// Cada usuário só lê e grava os próprios dados, em users/{uid}/...
+// Só a conta do dono do Dev Vault lê e grava, e só na própria pasta users/{uid}/...
+// Outras contas Google conseguem fazer login, mas o banco recusa tudo (revisão R-01).
+// O UID não é segredo e não identifica a pessoa (diferente do e-mail).
 // Qualquer outro caminho continua bloqueado (o Firestore nega tudo que não casa com um match).
 service cloud.firestore {
   match /databases/{database}/documents {
+    function ehDono(uid) {
+      return request.auth != null
+        && request.auth.uid == uid
+        && uid == "Q98yL89JwhMqdI2je6FxbNEKYm02";
+    }
+
     match /users/{uid}/projetos/{id} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if ehDono(uid);
     }
     match /users/{uid}/itens/{id} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if ehDono(uid);
     }
     match /users/{uid}/cofre/{doc} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if ehDono(uid);
     }
   }
 }

@@ -76,24 +76,7 @@ Documento do cofre: `users/{uid}/cofre/config`
 
 ## Regras de segurança do Firestore
 
-Cada usuário só lê e grava os próprios dados:
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{uid}/projetos/{id} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-    match /users/{uid}/itens/{id} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-    match /users/{uid}/cofre/{doc} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-  }
-}
-```
+Só a conta do dono lê e grava, e só na própria pasta. A versão em vigor está em `firestore.rules`: a função `ehDono(uid)` exige `request.auth.uid == uid` **e** que esse `uid` seja o UID fixo da conta do Mateus. Outras contas Google conseguem fazer login, mas o banco recusa tudo, e o app as desconecta com a mensagem "não tem acesso" (revisão técnica R-01, 16/11/2026: sem isso, qualquer pessoa poderia gastar a cota gratuita). O UID é usado no lugar do e-mail porque o arquivo vai para um repositório público.
 
 ## Estrutura de arquivos
 
@@ -137,6 +120,7 @@ Objetivo: os comandos úteis que aparecem enquanto trabalho num projeto com o Cl
   - Antes de gravar, o Claude troca por marcadores ou descarta comandos com tokens, chaves, e-mails ou IPs reais.
   - **Senhas nunca passam por esse caminho**, porque só o navegador, com a senha mestra, consegue cifrá-las.
   - O Admin SDK ignora as regras do Firestore, então a chave de serviço precisa de cuidado. Mesmo que vaze, as senhas continuam cifradas.
+  - Como as regras não protegem esse caminho, **o próprio script valida os dados antes de gravar** (revisão técnica 1, item D2): `tipo` sempre `comando`, pelo menos um passo, cada passo com `texto`/`comando` string e `aviso` booleano, limites de tamanho iguais aos do formulário, e só grava em `users/{UID do dono}`. Nunca altera itens com `tipo: "senha"` e só atualiza um item existente se ele tiver `origem: "claude-code"`; se o item com o mesmo nome veio do app, pergunta antes.
 - **No app:** itens com `origem: "claude-code"` mostram o selo "via Claude Code".
 - **Pendências desta etapa:** instalar o `firebase-admin` (pedir antes), gerar a chave de serviço no console do Firebase e criar a skill `guardar-comando` e o passo novo na `encerrar`.
 

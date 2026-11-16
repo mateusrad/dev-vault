@@ -1,5 +1,5 @@
 // Interface: telas, sidebar de projetos, lista de itens e formulário de novo item.
-import { entrar, sair, aoMudarUsuario, mensagemDeErro } from "./auth.js";
+import { entrar, sair, aoMudarUsuario, mensagemDeErro, UID_DONO } from "./auth.js";
 import {
   observarProjetos,
   observarItens,
@@ -1037,6 +1037,15 @@ el("btn-sair").addEventListener("click", () => {
 });
 
 aoMudarUsuario((usuario) => {
+  // Conta sem acesso: desconecta e explica na tela de login.
+  if (usuario && usuario.uid !== UID_DONO) {
+    const erro = el("erro-login");
+    erro.textContent = `A conta ${usuario.email || "escolhida"} não tem acesso a este cofre.`;
+    erro.hidden = false;
+    sair();
+    return;
+  }
+
   if (usuario) {
     estado.uid = usuario.uid;
     estado.projetoAtual = TODOS;
