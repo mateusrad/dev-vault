@@ -114,7 +114,7 @@ Feito em 16/11/2026: projeto `dev-vault` (ID `dev-vault-ee7ab`), plano **Spark**
 Objetivo: os comandos úteis que aparecem enquanto trabalho num projeto com o Claude Code vão para o Dev Vault, no projeto certo, sem eu precisar copiar à mão.
 
 - **Quando:** no fim da sessão, a skill `encerrar` lista os comandos novos que apareceram (como rodar, deploy, acesso, scripts) e eu marco quais guardar. Também posso pedir na hora ("guarda esse comando"). Nada é gravado sem a minha confirmação. Se a lista no `encerrar` não funcionar bem, ajustamos depois.
-- **Como grava:** um script local, fora dos repositórios (ex.: `C:\Users\mateu\.devvault\`), usando o `firebase-admin` com uma chave de conta de serviço guardada só nessa pasta (nunca no Git nem no frontend). O script recebe projeto, nome, passos, etiquetas e descrição. Ele acha o projeto pelo nome (ou cria, se não existir) e grava com `origem: "claude-code"`. Se já houver um item com o mesmo nome no projeto, atualiza em vez de duplicar.
+- **Como grava:** o script `ferramentas/guardar_comando.py`, versionado neste repositório (assim tem histórico e passa pelas revisões), usando o `firebase-admin` instalado num ambiente virtual fora do repositório (`C:\Users\mateu\.devvault\.venv`) e uma chave de conta de serviço guardada só em `C:\Users\mateu\.devvault\chave-servico.json` (nunca no Git nem no frontend). O script recebe projeto, nome, passos, etiquetas e descrição. Ele acha o projeto pelo nome (ou cria, se não existir) e grava com `origem: "claude-code"`. Se já houver um item com o mesmo nome no projeto, atualiza em vez de duplicar.
 - **Projeto:** o nome vem do CLAUDE.md do projeto aberto no Claude Code.
 - **Cuidados:**
   - Antes de gravar, o Claude troca por marcadores ou descarta comandos com tokens, chaves, e-mails ou IPs reais.
@@ -122,7 +122,9 @@ Objetivo: os comandos úteis que aparecem enquanto trabalho num projeto com o Cl
   - O Admin SDK ignora as regras do Firestore, então a chave de serviço precisa de cuidado. Mesmo que vaze, as senhas continuam cifradas.
   - Como as regras não protegem esse caminho, **o próprio script valida os dados antes de gravar** (revisão técnica 1, item D2): `tipo` sempre `comando`, pelo menos um passo, cada passo com `texto`/`comando` string e `aviso` booleano, limites de tamanho iguais aos do formulário, e só grava em `users/{UID do dono}`. Nunca altera itens com `tipo: "senha"` e só atualiza um item existente se ele tiver `origem: "claude-code"`; se o item com o mesmo nome veio do app, pergunta antes.
 - **No app:** itens com `origem: "claude-code"` mostram o selo "via Claude Code".
-- **Pendências desta etapa:** instalar o `firebase-admin` (pedir antes), gerar a chave de serviço no console do Firebase e criar a skill `guardar-comando` e o passo novo na `encerrar`.
+- **Projeto no CLAUDE.md:** cada projeto pode ter a linha "Nome do projeto no Dev Vault: **Nome**", que a skill usa para achar o projeto sempre com o mesmo nome.
+- **Skills (globais, em `C:\Users\mateu\.claude\skills\`):** `guardar-comando` (grava na hora, com confirmação) e o passo 3 da `encerrar` (lista os comandos da sessão para marcar quais guardar).
+- **Códigos de saída do script:** 0 gravado, 1 dados inválidos, 2 erro de configuração ou rede, 3 precisa da confirmação do Mateus.
 
 ## Ideias para depois (fora da versão 1)
 

@@ -35,3 +35,20 @@ Itens anteriores:
 - D2 — **adiado** (etapa 8). Q1 — **adiado**. Testes das regras no emulador — **adiado**.
 
 Conformidade: nada novo a levar.
+
+## Revisão 2026-11-16 — Etapa 8 e ajustes pós-auditoria
+
+- Material: `docs/revisoes/2026-11-16-etapa-8-integracao.md`
+- Commit revisado: `4d492e3` + etapa 8 ainda sem commit (arquivos novos completos; ajustes pós-auditoria como diff `89c782c..4d492e3`)
+
+Veredito: Aprovada
+
+- R-04 [P3] Leitura integral da coleção `itens` no script (custo de leituras) — **resolvido**. A consulta usa `where(filter=FieldFilter("projetoId", "==", id))`, então o Firestore só devolve os itens do projeto. O nome continua comparado no Python (sem maiúsculas e acentos), porque o banco não guarda o nome normalizado. O aviso de argumentos posicionais não aparece mais (gravação real conferida). Teste: `test_busca_itens_filtrando_pelo_projeto_no_banco`.
+- Melhoria: passar o JSON pela entrada padrão (`- < arquivo`) na skill — **descartado com justificativa**: a skill passa só o caminho de um arquivo gerado pelo Claude (sem aspas nem espaços), e o conteúdo não passa pelo terminal. Além disso, no Windows o `sys.stdin` do Python usa cp1252 e a entrada redirecionada corromperia os acentos. Achado nessa conferência e corrigido: o modo `-` do script passou a ler UTF-8 (e os dois modos aceitam BOM; bytes que não são UTF-8 dão saída 1). Testes: `test_stdin_le_utf8_mesmo_com_entrada_cp1252` e `test_aceita_bom_e_recusa_bytes_que_nao_sao_utf8`.
+
+Itens anteriores:
+- D2 Validação dos dados no script da etapa 8 — **resolvido** (confirmado pelo revisor).
+- R-03 — **resolvido** (código revisado nesta rodada).
+- Q1 e testes das regras no emulador — **adiados**.
+
+Conformidade: nada a levar (C-01 resolvido com a autoexclusão da conta, confirmado pelo revisor).

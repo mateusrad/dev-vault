@@ -49,6 +49,9 @@ Depois, abra **http://localhost:5500** (use `localhost`, não `127.0.0.1`: só o
 - `js/db.js`: CRUD no Firestore (etapa 2).
 - `js/cripto.js`: senha mestra e criptografia (etapa 6).
 - `js/app.js`: interface e eventos.
+- `ferramentas/servidor_dev.py`: servidor local sem cache.
+- `ferramentas/guardar_comando.py`: grava comandos no Firestore pelo Admin SDK (etapa 8). Roda com `C:\Users\mateu\.devvault\.venv\Scripts\python.exe` (é lá que está o `firebase-admin`); usado pela skill global `guardar-comando`.
+- `testes/`: testes da criptografia e do script da etapa 8.
 
 ## Regras específicas
 
@@ -56,4 +59,5 @@ Depois, abra **http://localhost:5500** (use `localhost`, não `127.0.0.1`: só o
 - Não adicionar bibliotecas. Se algo parecer exigir uma, pergunte antes.
 - Nunca colocar segredos em nome, descrição, etiquetas ou usuário de um item: esses campos não são criptografados.
 - A chave da criptografia fica só na memória, nunca em `localStorage` ou no Firestore.
-- Testes e lint: ainda não configurados (o projeto não usa npm). Os testes de regras no emulador estão anotados como pendência no `PROGRESSO.md`.
+- Testes (só bibliotecas padrão, sem instalar nada): `node testes/cripto.test.mjs` e `python -m unittest discover -s testes`. Lint ainda não configurado (o projeto não usa npm). Os testes de regras no emulador estão anotados como pendência no `PROGRESSO.md`.
+- O script da etapa 8 ignora as regras do Firestore (Admin SDK): toda mudança nele precisa manter a validação (`validar()` e `decidir()`) e os testes.
