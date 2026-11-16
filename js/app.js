@@ -23,6 +23,8 @@ const estado = {
   projetoAtual: TODOS,   // id do projeto ou "todos"
   busca: "",             // texto da busca (vazio = sem busca)
   filtroTipo: "todos",   // "todos", "comando" ou "senha"
+  selecionado: null,     // id do item selecionado pelas setas (Enter copia)
+  visiveis: [],          // itens na tela, na ordem mostrada
 };
 
 // Botões "Copiar" que acabaram de ser usados ("itemId:indice"), para manter o
@@ -78,6 +80,13 @@ function icone(nome, tamanho = 16) {
 // "Ação" e "acao" viram a mesma chave: compara sem maiúsculas e sem acentos.
 function normalizar(texto) {
   return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+}
+
+// Mais copiados primeiro; empate (ou nunca copiados) em ordem alfabética.
+function ordenarPorUso(lista) {
+  return [...lista].sort((a, b) =>
+    (b.vezesCopiado || 0) - (a.vezesCopiado || 0)
+    || a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
 }
 
 function ordenarPorNome(lista) {
@@ -272,7 +281,14 @@ function renderizarLista() {
   renderizarFiltroTipo(itens);
   const totalAntesDoFiltro = itens.length;
   if (estado.filtroTipo !== TODOS) itens = itens.filter((i) => tipoDo(i) === estado.filtroTipo);
-  itens = ordenarPorNome(itens);
+  itens = ordenarPorUso(itens);
+
+  // Seleção (setas e Enter). Na busca, o primeiro resultado já vem selecionado,
+  // então digitar e apertar Enter copia o comando do melhor resultado.
+  estado.visiveis = itens;
+  if (!itens.some((i) => i.id === estado.selecionado)) {
+    estado.selecionado = buscando && itens.length ? itens[0].id : null;
+  }
 
   el("titulo-mobile").textContent = buscando ? "Busca" : tituloTexto;
   const carregado = estado.projetosCarregados && estado.itensCarregados;
@@ -455,7 +471,60 @@ function limparBusca() {
 
 el("campo-busca").addEventListener("input", (e) => {
   estado.busca = e.target.value;
+  // Busca nova: a seleção volta para o primeiro resultado.
+  estado.selecionado = null;
   renderizarLista();
+});
+
+// ---------- Seleção com setas e Enter ----------
+
+function selecionarItem(id, rolar = true) {
+  if (estado.selecionado === id) return;
+  estado.selecionado = id;
+  renderizarLista();
+  if (rolar && id) {
+    document.querySelector(`[data-item-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" });
+  }
+}
+
+function moverSelecao(direcao) {
+  const lista = estado.visiveis;
+  if (lista.length === 0) return;
+  const atual = lista.findIndex((i) => i.id === estado.selecionado);
+  let proximo;
+  if (atual === -1) proximo = direcao > 0 ? 0 : lista.length - 1;
+  else proximo = Math.min(Math.max(atual + direcao, 0), lista.length - 1);
+  selecionarItem(lista[proximo].id);
+}
+
+function copiarSelecionado() {
+  const item = estado.visiveis.find((i) => i.id === estado.selecionado);
+  if (!item) return false;
+  const indice = (item.passos || []).findIndex((p) => p.comando);
+  if (indice === -1) {
+    mostrarToast("Este item não tem comando para copiar.", "erro");
+    return true;
+  }
+  copiar(item, indice, item.passos[indice].comando);
+  return true;
+}
+
+document.addEventListener("keydown", (e) => {
+  if (telas.app.hidden || document.querySelector("dialog[open]")) return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  const naBusca = e.target === el("campo-busca");
+  // Fora da busca, só age quando o foco não está num campo, botão ou link,
+  // para não roubar as setas e o Enter de quem está usando esses elementos.
+  const emElementoInterativo = e.target.closest("input, textarea, select, button, a, [contenteditable]");
+  if (!naBusca && emElementoInterativo) return;
+
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    moverSelecao(e.key === "ArrowDown" ? 1 : -1);
+  } else if (e.key === "Enter") {
+    if (copiarSelecionado()) e.preventDefault();
+  }
 });
 
 el("campo-busca").addEventListener("keydown", (e) => {
@@ -534,12 +603,28 @@ function cardItem(item, mostrarProjeto) {
       : null,
   ].filter(Boolean);
 
-  return h("article", { class: "card" },
+  const selecionado = estado.selecionado === item.id;
+  const temComando = (item.passos || []).some((p) => p.comando);
+
+  return h("article", {
+    class: `card${selecionado ? " e-selecionado" : ""}`,
+    "data-item-id": item.id,
+    // Clicar no card (fora dos botões e sem selecionar texto) também seleciona.
+    onclick: (e) => {
+      if (e.target.closest("button, a") || String(window.getSelection())) return;
+      selecionarItem(item.id, false);
+    },
+  },
     h("div", { class: "card-info" },
       h("div", { class: "card-titulo" },
         h("h2", { class: "card-nome" }, item.nome),
         item.origem === "claude-code"
           ? h("span", { class: "selo" }, icone("terminal", 12), "via Claude Code")
+          : null,
+        selecionado && temComando
+          ? h("span", { class: "selo-enter", title: "Enter copia o primeiro comando" },
+            h("span", { "aria-hidden": "true" }, "Enter ↵"),
+            h("span", { class: "sr-only" }, "Selecionado. Enter copia o primeiro comando."))
           : null,
       ),
       item.descricao ? h("p", { class: "card-descricao" }, item.descricao) : null,
@@ -971,6 +1056,8 @@ aoMudarUsuario((usuario) => {
       projetoAtual: TODOS,
       busca: "",
       filtroTipo: TODOS,
+      selecionado: null,
+      visiveis: [],
     });
     el("campo-busca").value = "";
     mostrarTela("login");
