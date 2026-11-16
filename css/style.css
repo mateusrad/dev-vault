@@ -879,6 +879,155 @@ kbd {
 .passo-form-acoes .btn-icone { width: 36px; height: 36px; }
 .passo-form-acoes .btn-icone[aria-pressed="true"] { color: var(--cor-alerta); }
 
+/* ---------- Senhas ---------- */
+
+.seletor-tipo {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-medio);
+}
+
+.seletor-opcao {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: transparent;
+  color: var(--cor-texto-secundario);
+  font: 500 14px var(--fonte-ui);
+  cursor: pointer;
+}
+.seletor-opcao:hover:not(:disabled) { color: var(--cor-texto-forte); }
+.seletor-opcao[aria-pressed="true"] { background: var(--cor-borda); color: var(--cor-texto-forte); }
+.seletor-opcao:disabled { cursor: not-allowed; }
+.seletor-opcao:disabled:not([aria-pressed="true"]) { opacity: 0.5; }
+
+.campos-senha { display: flex; flex-direction: column; gap: 20px; }
+
+.campo-codigo { font-family: var(--fonte-codigo) !important; }
+
+.campo-com-botao { position: relative; display: flex; align-items: center; }
+.campo-com-botao input { padding-right: 52px; min-height: 44px; }
+.campo-com-botao .btn-icone { position: absolute; right: 0; }
+.campo-com-botao .btn-icone[aria-pressed="true"] { color: var(--cor-primaria); }
+
+.nota-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--cor-alerta);
+  border-radius: var(--raio-medio);
+  background: var(--cor-alerta-fundo);
+  font-size: 13px;
+  color: var(--cor-texto-forte);
+}
+.nota-alerta svg { flex-shrink: 0; margin-top: 1px; color: var(--cor-alerta); }
+.nota-alerta strong { font-weight: 600; color: var(--cor-alerta); }
+
+.nota-erro { border-color: var(--cor-erro); background: #2F2528; }
+.nota-erro svg,
+.nota-erro strong { color: var(--cor-erro); }
+
+.selo-senha { color: var(--cor-alerta); }
+
+.card-senha {
+  flex: 2 1 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.linha-senha { display: flex; flex-direction: column; gap: 4px; }
+
+.linha-senha-rotulo {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cor-texto-secundario);
+}
+
+.senha-mascarada { letter-spacing: 0.15em; color: var(--cor-texto-secundario) !important; }
+
+/* Indicador "Senhas desbloqueadas" na sidebar */
+.btn-cofre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--cor-alerta);
+  border-radius: var(--raio-pequeno);
+  background: var(--cor-alerta-fundo);
+  color: var(--cor-texto-forte);
+  font: 500 13px var(--fonte-ui);
+  text-align: left;
+  cursor: pointer;
+}
+.btn-cofre svg { flex-shrink: 0; color: var(--cor-alerta); }
+.btn-cofre span:first-of-type { flex-grow: 1; }
+.btn-cofre-acao { color: var(--cor-alerta); }
+.btn-cofre:hover { background: #3A3628; }
+
+/* Diálogos da senha mestra */
+.dialogo-medio { width: min(480px, calc(100vw - 32px)); }
+.dialogo-medio .dialogo-corpo { gap: 16px; padding: 28px 28px 20px; }
+
+.icone-cofre {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-grande);
+  color: var(--cor-primaria);
+}
+
+.dialogo-medio strong { font-weight: 600; color: var(--cor-texto-forte); }
+
+input[type="password"] {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-pequeno);
+  color: var(--cor-texto-forte);
+  font: 400 14px var(--fonte-codigo);
+  letter-spacing: 0.05em;
+}
+input[type="password"][aria-invalid="true"] { border-color: var(--cor-erro); }
+
+.forca {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--cor-borda);
+  overflow: hidden;
+}
+.forca-barra { display: block; height: 100%; width: 0; background: var(--cor-erro); transition: width 0.15s; }
+.forca-barra[data-nivel="1"] { width: 25%; background: var(--cor-erro); }
+.forca-barra[data-nivel="2"] { width: 50%; background: var(--cor-alerta); }
+.forca-barra[data-nivel="3"] { width: 75%; background: var(--cor-sucesso); }
+.forca-barra[data-nivel="4"] { width: 100%; background: var(--cor-sucesso); }
+
+.caixa-marcar {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--cor-texto);
+  cursor: pointer;
+}
+.caixa-marcar input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--cor-primaria); flex-shrink: 0; }
+
 /* ---------- Toast ---------- */
 
 .toast {

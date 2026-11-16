@@ -8,7 +8,10 @@ import {
   atualizarItem,
   excluirItem,
   registrarCopia,
+  lerCofre,
+  criarCofre,
 } from "./db.js";
+import { estaDesbloqueado, bloquear, prepararCofre, desbloquear, cifrar, decifrar } from "./cripto.js";
 
 // ---------- Estado ----------
 
@@ -68,6 +71,9 @@ const ICONES = {
   abrir: '<path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path>',
   lupa: '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>',
   editar: '<path d="M4 20h4L19 9l-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path>',
+  olho: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>',
+  olhoFechado: '<path d="M3 3l18 18"></path><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.5 7 10 7a9.8 9.8 0 0 0 5.4-1.6"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>',
+  cadeado: '<rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path>',
   lixeira: '<path d="M4 7h16"></path><path d="M10 11v6M14 11v6"></path><path d="M6 7l1 13h10l1-13"></path><path d="M9 7V4h6v3"></path>',
 };
 
@@ -500,6 +506,10 @@ function moverSelecao(direcao) {
 function copiarSelecionado() {
   const item = estado.visiveis.find((i) => i.id === estado.selecionado);
   if (!item) return false;
+  if (tipoDo(item) === "senha") {
+    copiarSenha(item);
+    return true;
+  }
   const indice = (item.passos || []).findIndex((p) => p.comando);
   if (indice === -1) {
     mostrarToast("Este item não tem comando para copiar.", "erro");
@@ -604,7 +614,7 @@ function cardItem(item, mostrarProjeto) {
   ].filter(Boolean);
 
   const selecionado = estado.selecionado === item.id;
-  const temComando = (item.passos || []).some((p) => p.comando);
+  const temComando = tipoDo(item) === "senha" || (item.passos || []).some((p) => p.comando);
 
   return h("article", {
     class: `card${selecionado ? " e-selecionado" : ""}`,
@@ -618,6 +628,9 @@ function cardItem(item, mostrarProjeto) {
     h("div", { class: "card-info" },
       h("div", { class: "card-titulo" },
         h("h2", { class: "card-nome" }, item.nome),
+        tipoDo(item) === "senha"
+          ? h("span", { class: "selo selo-senha" }, icone("cadeado", 12), "Senha")
+          : null,
         item.origem === "claude-code"
           ? h("span", { class: "selo" }, icone("terminal", 12), "via Claude Code")
           : null,
@@ -637,7 +650,7 @@ function cardItem(item, mostrarProjeto) {
           "aria-label": `Editar "${item.nome}"`,
           title: "Editar",
           "data-foco": `editar:${item.id}`,
-          onclick: () => abrirFormItem(item),
+          onclick: () => editarItem(item),
         }, icone("editar")),
         h("button", {
           type: "button",
@@ -649,10 +662,73 @@ function cardItem(item, mostrarProjeto) {
         }, icone("lixeira")),
       ),
     ),
-    h("ol", { class: "card-passos" },
-      ...passos.map((passo, i) => passoNoCard(item, passo, i, numerar ? i + 1 : null)),
+    tipoDo(item) === "senha"
+      ? conteudoSenha(item)
+      : h("ol", { class: "card-passos" },
+        ...passos.map((passo, i) => passoNoCard(item, passo, i, numerar ? i + 1 : null)),
+      ),
+  );
+}
+
+// Lado direito do card de senha: usuário (aberto) e valor (mascarado até mostrar).
+function conteudoSenha(item) {
+  const revelada = reveladas.get(item.id);
+  const chaveCopia = `${item.id}:senha`;
+  const copiado = copiadosAgora.has(chaveCopia);
+
+  const linhaUsuario = item.usuario
+    ? h("div", { class: "linha-senha" },
+      h("span", { class: "linha-senha-rotulo" }, "Usuário"),
+      h("div", { class: "bloco-codigo" },
+        h("pre", {}, h("code", {}, item.usuario)),
+        h("div", { class: "bloco-acoes" },
+          botaoCopiar(`${item.id}:usuario`, "Copiar usuário", () => copiar(item, "usuario", item.usuario, false)),
+        ),
+      ),
+    )
+    : null;
+
+  const linhaValor = h("div", { class: "linha-senha" },
+    h("span", { class: "linha-senha-rotulo" }, "Senha"),
+    h("div", { class: "bloco-codigo" },
+      revelada !== undefined
+        ? h("pre", {}, h("code", {}, revelada))
+        : h("pre", { class: "senha-mascarada", "aria-label": "Senha oculta" }, "••••••••••••"),
+      h("div", { class: "bloco-acoes" },
+        h("button", {
+          type: "button",
+          class: "btn-icone",
+          "aria-label": revelada !== undefined ? "Ocultar senha" : "Mostrar senha",
+          "aria-pressed": revelada !== undefined ? "true" : "false",
+          title: revelada !== undefined ? "Ocultar" : "Mostrar",
+          "data-foco": `mostrar:${item.id}`,
+          onclick: () => alternarSenha(item),
+        }, icone(revelada !== undefined ? "olhoFechado" : "olho", 18)),
+        h("button", {
+          type: "button",
+          class: `btn-icone btn-copiar${copiado ? " e-copiado" : ""}`,
+          "aria-label": copiado ? "Copiado" : "Copiar senha",
+          title: "Copiar",
+          "data-foco": `copiar:${chaveCopia}`,
+          onclick: () => copiarSenha(item),
+        }, icone(copiado ? "check" : "copiar", 18)),
+      ),
     ),
   );
+
+  return h("div", { class: "card-senha" }, linhaUsuario, linhaValor);
+}
+
+function botaoCopiar(chave, rotulo, acao) {
+  const copiado = copiadosAgora.has(chave);
+  return h("button", {
+    type: "button",
+    class: `btn-icone btn-copiar${copiado ? " e-copiado" : ""}`,
+    "aria-label": copiado ? "Copiado" : rotulo,
+    title: "Copiar",
+    "data-foco": `copiar:${chave}`,
+    onclick: acao,
+  }, icone(copiado ? "check" : "copiar", 18));
 }
 
 // Só http e https viram link. Assim um "javascript:..." salvo como comando nunca é aberto.
@@ -691,16 +767,17 @@ function blocoComando(item, indice, comando) {
   );
 }
 
-async function copiar(item, indice, comando) {
+// parte: índice do passo, "usuario" ou "senha". contar: soma em vezesCopiado.
+async function copiar(item, parte, texto, contar = true) {
   try {
-    await navigator.clipboard.writeText(comando);
+    await navigator.clipboard.writeText(texto);
   } catch (erro) {
     console.error(erro);
-    mostrarToast("Não foi possível copiar. Selecione o texto e use Ctrl+C.", "erro");
+    mostrarToast("Não foi possível copiar. Clique de novo no botão Copiar.", "erro");
     return;
   }
 
-  const chave = `${item.id}:${indice}`;
+  const chave = `${item.id}:${parte}`;
   copiadosAgora.add(chave);
   renderizarLista();
   mostrarToast("Copiado!");
@@ -710,7 +787,9 @@ async function copiar(item, indice, comando) {
   }, 2000);
 
   // A contagem não é essencial: se falhar (ex.: sem internet), só registra no console.
-  registrarCopia(estado.uid, item.id).catch((erro) => console.error("Erro ao contar cópia:", erro));
+  if (contar) {
+    registrarCopia(estado.uid, item.id).catch((erro) => console.error("Erro ao contar cópia:", erro));
+  }
 }
 
 function passoNoCard(item, passo, indice, numero) {
@@ -752,16 +831,60 @@ function passoVazio() {
 
 // id do item em edição, ou null quando o formulário é de item novo.
 let itemEditando = null;
+// Tipo escolhido no formulário: "comando" ou "senha".
+let tipoForm = "comando";
+
+function textoBotaoSalvar() {
+  if (itemEditando !== null) return "Salvar alterações";
+  return tipoForm === "senha" ? "Salvar senha" : "Salvar comando";
+}
+
+function definirTipoForm(tipo) {
+  tipoForm = tipo;
+  const senha = tipo === "senha";
+  el("f-tipo").querySelectorAll("[data-tipo]").forEach((b) => {
+    b.setAttribute("aria-pressed", b.dataset.tipo === tipo ? "true" : "false");
+  });
+  el("campos-senha").hidden = !senha;
+  el("campo-passos").hidden = senha;
+  el("ajuda-comando").hidden = senha;
+  const editando = itemEditando !== null;
+  el("titulo-dlg-item").textContent = `${editando ? "Editar" : "Nova"} ${senha ? "senha" : "comando"}`
+    .replace("Nova comando", "Novo comando");
+  el("btn-salvar-item").textContent = textoBotaoSalvar();
+  limparErrosItem();
+}
+
+// Escolher "Senha" exige o cofre desbloqueado (ou criar a senha mestra no primeiro uso).
+el("f-tipo").addEventListener("click", async (e) => {
+  const botao = e.target.closest("[data-tipo]");
+  if (!botao || botao.disabled || botao.dataset.tipo === tipoForm) return;
+  if (botao.dataset.tipo === "senha" && !(await garantirDesbloqueio())) return;
+  definirTipoForm(botao.dataset.tipo);
+  el(botao.dataset.tipo === "senha" ? "f-valor" : "passo-1-texto")?.focus();
+});
+
+// Mostrar/ocultar o valor da senha no formulário.
+el("btn-mostrar-valor").addEventListener("click", () => {
+  const campo = el("f-valor");
+  const mostrar = campo.type === "password";
+  campo.type = mostrar ? "text" : "password";
+  el("btn-mostrar-valor").setAttribute("aria-pressed", mostrar ? "true" : "false");
+  el("btn-mostrar-valor").setAttribute("aria-label", mostrar ? "Ocultar senha" : "Mostrar senha");
+});
 
 // Sem argumento: item novo. Com um item: edição, com os campos já preenchidos.
-function abrirFormItem(item = null) {
+// valorSenha: o valor já decifrado, quando é a edição de uma senha.
+function abrirFormItem(item = null, { tipo = "comando", valorSenha = "" } = {}) {
   fecharMenu();
   el("form-item").reset();
-  limparErrosItem();
+  el("f-valor").type = "password";
+  el("btn-mostrar-valor").setAttribute("aria-pressed", "false");
   itemEditando = item ? item.id : null;
+  const tipoInicial = item ? tipoDo(item) : tipo;
 
-  el("titulo-dlg-item").textContent = item ? "Editar comando" : "Novo comando";
-  el("btn-salvar-item").textContent = item ? "Salvar alterações" : "Salvar comando";
+  // Na edição não dá para trocar o tipo do item.
+  el("f-tipo").querySelectorAll("[data-tipo]").forEach((b) => { b.disabled = Boolean(item); });
 
   let projeto;
   if (item) {
@@ -769,6 +892,8 @@ function abrirFormItem(item = null) {
     el("f-nome").value = item.nome || "";
     el("f-descricao").value = item.descricao || "";
     el("f-etiquetas").value = (item.etiquetas || []).join(", ");
+    el("f-usuario").value = item.usuario || "";
+    el("f-valor").value = valorSenha;
     // Cópia dos passos: editar no formulário não mexe no item até salvar.
     passosForm = (item.passos || []).map((p) => ({
       texto: p.texto || "",
@@ -784,14 +909,43 @@ function abrirFormItem(item = null) {
   }
   el("f-projeto").value = projeto ? projeto.nome : "";
   renderizarPassosForm();
+  definirTipoForm(tipoInicial);
 
   dialogo.showModal();
   (projeto ? el("f-nome") : el("f-projeto")).focus();
 }
 
+// Novo item: com o filtro "Senhas" ativo, já começa como senha (pede o desbloqueio antes).
+async function novoItem() {
+  if (estado.filtroTipo === "senha") {
+    if (!(await garantirDesbloqueio())) return;
+    abrirFormItem(null, { tipo: "senha" });
+  } else {
+    abrirFormItem();
+  }
+}
+
+// Editar: uma senha precisa ser decifrada antes de abrir o formulário.
+async function editarItem(item) {
+  if (tipoDo(item) !== "senha") {
+    abrirFormItem(item);
+    return;
+  }
+  if (!(await garantirDesbloqueio())) return;
+  try {
+    const valor = await decifrar(item.cifra, item.iv);
+    abrirFormItem(item, { valorSenha: valor });
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast("Não foi possível abrir esta senha para edição.", "erro");
+  }
+}
+
 dialogo.querySelectorAll("[data-fechar]").forEach((b) => b.addEventListener("click", () => dialogo.close()));
-el("btn-novo-item").addEventListener("click", () => abrirFormItem());
-el("btn-novo-item-mobile").addEventListener("click", () => abrirFormItem());
+// Ao fechar, apaga a senha digitada do campo (não fica no HTML da página).
+dialogo.addEventListener("close", () => { el("f-valor").value = ""; });
+el("btn-novo-item").addEventListener("click", novoItem);
+el("btn-novo-item-mobile").addEventListener("click", novoItem);
 
 // O textarea do comando cresce conforme o texto.
 function ajustarAltura(textarea) {
@@ -896,9 +1050,11 @@ el("f-projeto").addEventListener("input", () => limparErro("f-projeto", "f-proje
 el("f-nome").addEventListener("input", () => limparErro("f-nome", "f-nome-erro"));
 el("lista-passos-form").addEventListener("input", () => limparErro(null, "f-passos-erro"));
 
+el("f-valor").addEventListener("input", () => limparErro("f-valor", "f-valor-erro"));
+
 function limparErrosItem() {
-  for (const id of ["f-projeto-erro", "f-nome-erro", "f-passos-erro"]) el(id).hidden = true;
-  for (const id of ["f-projeto", "f-nome"]) el(id).removeAttribute("aria-invalid");
+  for (const id of ["f-projeto-erro", "f-nome-erro", "f-passos-erro", "f-valor-erro"]) el(id).hidden = true;
+  for (const id of ["f-projeto", "f-nome", "f-valor"]) el(id).removeAttribute("aria-invalid");
 }
 
 // Lê e valida o formulário. Retorna os dados limpos ou null (e mostra os erros).
@@ -931,9 +1087,17 @@ function lerFormItem() {
     mostrarErroCampo("f-nome", "f-nome-erro", "Dê um nome ao item.");
     primeiroErro ??= "f-nome";
   }
-  if (passos.length === 0) {
+  // A senha não leva trim: espaços no começo ou no fim podem fazer parte dela.
+  const usuario = el("f-usuario").value.trim();
+  const valor = el("f-valor").value;
+
+  if (tipoForm === "comando" && passos.length === 0) {
     mostrarErroCampo(null, "f-passos-erro", "Preencha o texto ou o comando de pelo menos um passo.");
     primeiroErro ??= "passo-1-texto";
+  }
+  if (tipoForm === "senha" && !valor) {
+    mostrarErroCampo("f-valor", "f-valor-erro", "Digite a senha.");
+    primeiroErro ??= "f-valor";
   }
 
   if (primeiroErro) {
@@ -941,7 +1105,7 @@ function lerFormItem() {
     return null;
   }
 
-  return { nomeProjeto, nome, descricao, etiquetas, passos };
+  return { nomeProjeto, nome, descricao, etiquetas, passos, usuario, valor };
 }
 
 el("form-item").addEventListener("submit", async (e) => {
@@ -962,25 +1126,277 @@ el("form-item").addEventListener("submit", async (e) => {
       nome: dados.nome,
       descricao: dados.descricao,
       etiquetas: dados.etiquetas,
-      passos: dados.passos,
     };
+    if (tipoForm === "senha") {
+      // Cifra no navegador, com IV novo a cada gravação. O valor em texto puro nunca sai daqui.
+      if (!estaDesbloqueado()) throw new Error("Cofre bloqueado.");
+      const { cifra, iv } = await cifrar(dados.valor);
+      Object.assign(campos, { usuario: dados.usuario, cifra, iv });
+    } else {
+      campos.passos = dados.passos;
+    }
+
     const editando = itemEditando !== null;
-    if (editando) await atualizarItem(estado.uid, itemEditando, campos);
-    else await criarItem(estado.uid, campos);
+    if (editando) {
+      await atualizarItem(estado.uid, itemEditando, tipoForm, campos);
+      reveladas.delete(itemEditando);
+    } else {
+      await criarItem(estado.uid, tipoForm, campos);
+    }
 
     dialogo.close();
     // Ao editar, fica onde estava (inclusive na busca). Item novo leva ao projeto dele.
     if (editando) renderizarTudo();
     else selecionarProjeto(projetoId);
-    mostrarToast(editando ? "Alterações salvas" : "Comando salvo");
+    let mensagem = tipoForm === "senha" ? "Senha salva" : "Comando salvo";
+    if (editando) mensagem = "Alterações salvas";
+    mostrarToast(mensagem);
   } catch (erroFirestore) {
     console.error(erroFirestore);
     mostrarToast("Não foi possível salvar. Verifique a conexão e tente de novo.", "erro");
   } finally {
     botao.disabled = false;
-    botao.textContent = itemEditando !== null ? "Salvar alterações" : "Salvar comando";
+    botao.textContent = textoBotaoSalvar();
   }
 });
+
+// ---------- Cofre: senha mestra, desbloqueio e senhas ----------
+
+// Configuração do cofre lida do Firestore: undefined = ainda não lida; null = não existe.
+let configCofre;
+// Senhas decifradas na tela agora (itemId -> texto). Somem ao ocultar, bloquear ou sair.
+const reveladas = new Map();
+const TEMPO_REVELADA_MS = 30000;
+// Quem pediu o desbloqueio espera esta promessa (true = liberado, false = cancelou).
+let respostaCofre = null;
+
+const dialogoDesbloquear = el("dlg-desbloquear");
+const dialogoCriarMestra = el("dlg-criar-mestra");
+
+async function obterConfigCofre() {
+  if (configCofre === undefined) configCofre = await lerCofre(estado.uid);
+  return configCofre;
+}
+
+// Garante o cofre desbloqueado. Se precisar, abre o diálogo de desbloquear
+// ou, no primeiro uso, o de criar a senha mestra.
+async function garantirDesbloqueio() {
+  if (estaDesbloqueado()) return true;
+  // Já há um diálogo de desbloqueio aberto (ex.: clique duplo): não abre outro.
+  if (respostaCofre) return false;
+  let config;
+  try {
+    config = await obterConfigCofre();
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast("Não foi possível ler o cofre. Verifique a conexão.", "erro");
+    return false;
+  }
+  return new Promise((resolve) => {
+    respostaCofre = resolve;
+    if (config) abrirDesbloquear();
+    else abrirCriarMestra();
+  });
+}
+
+function responderPedidoCofre() {
+  const resolver = respostaCofre;
+  respostaCofre = null;
+  resolver?.(estaDesbloqueado());
+}
+
+function atualizarIndicadorCofre() {
+  el("btn-bloquear").hidden = !estaDesbloqueado();
+}
+
+function bloquearCofre({ avisar = true } = {}) {
+  bloquear();
+  reveladas.clear();
+  atualizarIndicadorCofre();
+  renderizarLista();
+  if (avisar) mostrarToast("Senhas bloqueadas");
+}
+
+el("btn-bloquear").addEventListener("click", () => bloquearCofre());
+
+// Desbloquear
+
+function abrirDesbloquear() {
+  el("form-desbloquear").reset();
+  el("d-erro").hidden = true;
+  el("d-senha").removeAttribute("aria-invalid");
+  dialogoDesbloquear.showModal();
+  el("d-senha").focus();
+}
+
+el("form-desbloquear").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const campo = el("d-senha");
+  const erro = el("d-erro");
+  if (!campo.value) {
+    erro.textContent = "Digite a senha mestra.";
+    erro.hidden = false;
+    campo.focus();
+    return;
+  }
+
+  const botao = el("btn-desbloquear");
+  botao.disabled = true;
+  botao.textContent = "Desbloqueando…";
+  try {
+    const certa = await desbloquear(campo.value, configCofre);
+    if (certa) {
+      campo.value = "";
+      atualizarIndicadorCofre();
+      dialogoDesbloquear.close();
+      renderizarLista();
+    } else {
+      erro.textContent = "Senha mestra incorreta.";
+      erro.hidden = false;
+      campo.setAttribute("aria-invalid", "true");
+      campo.select();
+    }
+  } catch (erroCripto) {
+    console.error(erroCripto);
+    erro.textContent = "Não foi possível desbloquear. Recarregue a página e tente de novo.";
+    erro.hidden = false;
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Desbloquear";
+  }
+});
+
+// Criar a senha mestra (primeiro uso)
+
+const MINIMO_SENHA_MESTRA = 12;
+
+// Estimativa simples: tamanho e variedade de caracteres. Só orienta, não bloqueia.
+function forcaDaSenha(senha) {
+  if (!senha) return { nivel: 0, texto: "" };
+  let pontos = 0;
+  if (senha.length >= MINIMO_SENHA_MESTRA) pontos++;
+  if (senha.length >= 16) pontos++;
+  if (senha.length >= 20) pontos++;
+  const tipos = [/[a-z]/, /[A-Z]/, /\d/, /[^a-zA-Z\d]/].filter((r) => r.test(senha)).length;
+  if (tipos >= 3) pontos++;
+  if (senha.length < MINIMO_SENHA_MESTRA) return { nivel: 1, texto: `Curta demais: faltam ${MINIMO_SENHA_MESTRA - senha.length} caracteres.` };
+  return [
+    null,
+    { nivel: 1, texto: "Fraca. Use uma frase mais longa." },
+    { nivel: 2, texto: "Razoável. Uma frase mais longa fica melhor." },
+    { nivel: 3, texto: "Boa." },
+    { nivel: 4, texto: "Forte." },
+  ][Math.max(1, pontos)];
+}
+
+function abrirCriarMestra() {
+  el("form-criar-mestra").reset();
+  for (const id of ["m-nova-erro", "m-confirma-erro", "m-entendi-erro"]) el(id).hidden = true;
+  el("m-forca-barra").dataset.nivel = "0";
+  el("m-forca").textContent = "Use uma frase longa, fácil de lembrar e que você não use em outro lugar.";
+  dialogoCriarMestra.showModal();
+  el("m-nova").focus();
+}
+
+el("m-nova").addEventListener("input", (e) => {
+  const { nivel, texto } = forcaDaSenha(e.target.value);
+  el("m-forca-barra").dataset.nivel = String(nivel);
+  el("m-forca").textContent = texto || "Use uma frase longa, fácil de lembrar e que você não use em outro lugar.";
+  el("m-nova-erro").hidden = true;
+});
+el("m-confirma").addEventListener("input", () => { el("m-confirma-erro").hidden = true; });
+el("m-entendi").addEventListener("change", () => { el("m-entendi-erro").hidden = true; });
+
+el("form-criar-mestra").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const senha = el("m-nova").value;
+  const confirma = el("m-confirma").value;
+
+  let primeiroErro = null;
+  const erroEm = (idErro, mensagem, idCampo) => {
+    el(idErro).textContent = mensagem;
+    el(idErro).hidden = false;
+    primeiroErro ??= idCampo;
+  };
+  if (senha.length < MINIMO_SENHA_MESTRA) erroEm("m-nova-erro", `Use pelo menos ${MINIMO_SENHA_MESTRA} caracteres.`, "m-nova");
+  else if (confirma !== senha) erroEm("m-confirma-erro", "As duas senhas não são iguais.", "m-confirma");
+  if (!el("m-entendi").checked) erroEm("m-entendi-erro", "Marque para confirmar que entendeu.", "m-entendi");
+  if (primeiroErro) {
+    el(primeiroErro).focus();
+    return;
+  }
+
+  const botao = el("btn-criar-mestra");
+  botao.disabled = true;
+  botao.textContent = "Criando…";
+  try {
+    const config = await prepararCofre(senha);
+    await criarCofre(estado.uid, config);
+    configCofre = config;
+    el("form-criar-mestra").reset();
+    atualizarIndicadorCofre();
+    dialogoCriarMestra.close();
+    mostrarToast("Senha mestra criada");
+  } catch (erro) {
+    // Se não gravou, não deixa a chave na memória: a senha mestra não existe no banco.
+    bloquear();
+    console.error(erro);
+    configCofre = undefined;
+    erroEm("m-nova-erro", "Não foi possível criar o cofre. Verifique a conexão e tente de novo.", "m-nova");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Criar e desbloquear";
+  }
+});
+
+// Os dois diálogos respondem a quem pediu o desbloqueio ao fechar (inclusive com Esc ou Cancelar).
+for (const d of [dialogoDesbloquear, dialogoCriarMestra]) {
+  d.querySelectorAll("[data-fechar]").forEach((b) => b.addEventListener("click", () => d.close()));
+  d.addEventListener("close", () => {
+    // Não deixa a senha mestra digitada nos campos.
+    d.querySelector("form").reset();
+    responderPedidoCofre();
+  });
+}
+
+// Mostrar, ocultar e copiar senhas
+
+async function alternarSenha(item) {
+  if (reveladas.has(item.id)) {
+    reveladas.delete(item.id);
+    renderizarLista();
+    return;
+  }
+  if (!(await garantirDesbloqueio())) return;
+  try {
+    const texto = await decifrar(item.cifra, item.iv);
+    reveladas.set(item.id, texto);
+    renderizarLista();
+    // Esconde sozinha depois de um tempo.
+    setTimeout(() => {
+      if (reveladas.get(item.id) === texto) {
+        reveladas.delete(item.id);
+        renderizarLista();
+      }
+    }, TEMPO_REVELADA_MS);
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast("Não foi possível decifrar esta senha.", "erro");
+  }
+}
+
+async function copiarSenha(item) {
+  if (!(await garantirDesbloqueio())) return;
+  let texto;
+  try {
+    texto = await decifrar(item.cifra, item.iv);
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast("Não foi possível decifrar esta senha.", "erro");
+    return;
+  }
+  copiar(item, "senha", texto);
+}
 
 // ---------- Login e dados ----------
 
@@ -1031,8 +1447,8 @@ function iniciarObservadores(uid) {
 
 el("btn-sair").addEventListener("click", () => {
   // Para de ouvir o Firestore antes de sair, para não dar erro de permissão.
-  // Na etapa 6, sair também vai apagar a chave do cofre da memória.
   pararObservadores();
+  bloquearCofre({ avisar: false });
   sair();
 });
 
@@ -1056,6 +1472,11 @@ aoMudarUsuario((usuario) => {
   } else {
     pararObservadores();
     document.querySelectorAll("dialog[open]").forEach((d) => d.close());
+    // Apaga a chave da memória e esquece a configuração do cofre.
+    bloquear();
+    reveladas.clear();
+    configCofre = undefined;
+    atualizarIndicadorCofre();
     Object.assign(estado, {
       uid: null,
       projetos: [],

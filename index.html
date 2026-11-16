@@ -70,6 +70,12 @@
         </form>
       </nav>
 
+      <button id="btn-bloquear" type="button" class="btn-cofre" hidden>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+        <span>Senhas desbloqueadas</span>
+        <span class="btn-cofre-acao">Bloquear</span>
+      </button>
+
       <div class="usuario">
         <img id="usuario-avatar" class="avatar" alt="" referrerpolicy="no-referrer" hidden>
         <span id="usuario-inicial" class="avatar avatar-inicial" aria-hidden="true"></span>
@@ -124,6 +130,17 @@
       </header>
 
       <div class="dialogo-corpo">
+        <div id="f-tipo" class="seletor-tipo" role="group" aria-label="Tipo de item">
+          <button type="button" class="seletor-opcao" data-tipo="comando" aria-pressed="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-5-6-5"></path><path d="M12 19h8"></path></svg>
+            Comando
+          </button>
+          <button type="button" class="seletor-opcao" data-tipo="senha" aria-pressed="false">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+            Senha
+          </button>
+        </div>
+
         <div class="grade-2">
           <div class="campo">
             <label for="f-projeto">Projeto <span class="opcional">(obrigatório)</span></label>
@@ -139,7 +156,28 @@
           </div>
         </div>
 
-        <fieldset class="campo-passos" aria-describedby="f-passos-erro">
+        <div id="campos-senha" class="campos-senha" hidden>
+          <div class="campo">
+            <label for="f-usuario">Usuário ou identificador <span class="opcional">(opcional, fica visível e não é criptografado)</span></label>
+            <input id="f-usuario" type="text" maxlength="200" autocomplete="off" spellcheck="false" class="campo-codigo" placeholder="Ex.: e-mail da conta, Access Key ID">
+          </div>
+          <div class="campo">
+            <label for="f-valor">Senha <span class="opcional">(obrigatório)</span></label>
+            <div class="campo-com-botao">
+              <input id="f-valor" type="password" maxlength="2000" autocomplete="new-password" spellcheck="false" class="campo-codigo" aria-describedby="f-valor-erro">
+              <button id="btn-mostrar-valor" type="button" class="btn-icone" aria-label="Mostrar senha" aria-pressed="false">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+            <p id="f-valor-erro" class="mensagem-erro" hidden></p>
+          </div>
+          <div class="nota-alerta" role="note">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6l8-3z"></path><path d="M12 8v5M12 16v.01"></path></svg>
+            <p><strong>Criptografada no seu navegador</strong> com a senha mestra antes de ser salva. Nome, usuário, descrição e etiquetas ficam abertos para a busca: não coloque segredos neles.</p>
+          </div>
+        </div>
+
+        <fieldset id="campo-passos" class="campo-passos" aria-describedby="f-passos-erro">
           <legend>Passos <span class="opcional">(pelo menos um)</span></legend>
           <div id="lista-passos-form" class="lista-passos-form"></div>
           <p id="f-passos-erro" class="mensagem-erro" hidden></p>
@@ -160,12 +198,76 @@
           </div>
         </div>
 
-        <p class="ajuda">Nome, descrição e etiquetas não são criptografados. Não coloque senhas ou tokens nesses campos nem nos comandos.</p>
+        <p id="ajuda-comando" class="ajuda">Nome, descrição, etiquetas e comandos não são criptografados. Não coloque senhas ou tokens neles: para isso, use o tipo Senha.</p>
       </div>
 
       <footer class="dialogo-rodape">
         <button type="button" class="btn btn-fantasma" data-fechar>Cancelar</button>
         <button id="btn-salvar-item" type="submit" class="btn btn-primario">Salvar comando</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Criar a senha mestra (primeiro uso) -->
+  <dialog id="dlg-criar-mestra" class="dialogo dialogo-medio" aria-labelledby="titulo-criar-mestra">
+    <form id="form-criar-mestra" class="dialogo-form" novalidate>
+      <div class="dialogo-corpo">
+        <div class="icone-cofre" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6l8-3z"></path><path d="M9.5 12l2 2 3.5-4"></path></svg>
+        </div>
+        <h2 id="titulo-criar-mestra" class="dialogo-titulo">Criar a senha mestra</h2>
+        <p class="texto-secundario">Ela protege todas as suas senhas e é pedida para mostrar ou copiar uma senha. Ela <strong>nunca sai deste navegador</strong>.</p>
+
+        <div class="campo">
+          <label for="m-nova">Senha mestra <span class="opcional">(mínimo de 12 caracteres)</span></label>
+          <input id="m-nova" type="password" autocomplete="new-password" spellcheck="false" aria-describedby="m-forca m-nova-erro">
+          <div class="forca" aria-hidden="true"><span id="m-forca-barra" class="forca-barra"></span></div>
+          <p id="m-forca" class="ajuda">Use uma frase longa, fácil de lembrar e que você não use em outro lugar.</p>
+          <p id="m-nova-erro" class="mensagem-erro" hidden></p>
+        </div>
+
+        <div class="campo">
+          <label for="m-confirma">Repita a senha mestra</label>
+          <input id="m-confirma" type="password" autocomplete="new-password" spellcheck="false" aria-describedby="m-confirma-erro">
+          <p id="m-confirma-erro" class="mensagem-erro" hidden></p>
+        </div>
+
+        <div class="nota-alerta nota-erro" role="note">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3l9-16z"></path><path d="M12 10v4M12 17v.01"></path></svg>
+          <p><strong>Não há como recuperar.</strong> Se você esquecer a senha mestra, as senhas salvas ficam ilegíveis para sempre, nem o Firebase consegue abrir.</p>
+        </div>
+
+        <label class="caixa-marcar">
+          <input id="m-entendi" type="checkbox">
+          <span>Entendi que não há recuperação e guardei a senha mestra em lugar seguro.</span>
+        </label>
+        <p id="m-entendi-erro" class="mensagem-erro" hidden></p>
+      </div>
+      <footer class="dialogo-rodape">
+        <button type="button" class="btn btn-fantasma" data-fechar>Cancelar</button>
+        <button id="btn-criar-mestra" type="submit" class="btn btn-primario">Criar e desbloquear</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Desbloquear as senhas -->
+  <dialog id="dlg-desbloquear" class="dialogo dialogo-medio" aria-labelledby="titulo-desbloquear">
+    <form id="form-desbloquear" class="dialogo-form" novalidate>
+      <div class="dialogo-corpo">
+        <div class="icone-cofre" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+        </div>
+        <h2 id="titulo-desbloquear" class="dialogo-titulo">Desbloquear senhas</h2>
+        <p class="texto-secundario">Digite a senha mestra. As senhas ficam liberadas até você bloquear, sair ou recarregar a página.</p>
+        <div class="campo">
+          <label for="d-senha">Senha mestra</label>
+          <input id="d-senha" type="password" autocomplete="current-password" spellcheck="false" aria-describedby="d-erro">
+          <p id="d-erro" class="mensagem-erro" role="alert" hidden></p>
+        </div>
+      </div>
+      <footer class="dialogo-rodape">
+        <button type="button" class="btn btn-fantasma" data-fechar>Cancelar</button>
+        <button id="btn-desbloquear" type="submit" class="btn btn-primario">Desbloquear</button>
       </footer>
     </form>
   </dialog>

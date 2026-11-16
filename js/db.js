@@ -4,6 +4,7 @@ import {
   getFirestore,
   collection,
   doc,
+  getDoc,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -16,6 +17,7 @@ const db = getFirestore(app);
 
 const colecaoProjetos = (uid) => collection(db, "users", uid, "projetos");
 const colecaoItens = (uid) => collection(db, "users", uid, "itens");
+const docCofre = (uid) => doc(db, "users", uid, "cofre", "config");
 
 function paraLista(snapshot) {
   return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -38,22 +40,27 @@ export async function criarProjeto(uid, nome) {
   return ref.id;
 }
 
-// Soma 1 em vezesCopiado. O increment() é feito no servidor, então duas cópias
-// seguidas (ou em duas abas) não se atropelam.
-export function registrarCopia(uid, itemId) {
-  return updateDoc(doc(colecaoItens(uid), itemId), { vezesCopiado: increment(1) });
+// Campos gravados de cada tipo de item.
+// - comando: passos
+// - senha: usuario (aberto), cifra e iv (valor criptografado no navegador)
+function camposDoItem(tipo, campos) {
+  const base = {
+    projetoId: campos.projetoId,
+    nome: campos.nome,
+    descricao: campos.descricao,
+    etiquetas: campos.etiquetas,
+  };
+  if (tipo === "senha") {
+    return { ...base, usuario: campos.usuario, cifra: campos.cifra, iv: campos.iv };
+  }
+  return { ...base, passos: campos.passos };
 }
 
-// Por enquanto só itens do tipo "comando". As senhas chegam na etapa 6.
-export async function criarItem(uid, { projetoId, nome, descricao, etiquetas, passos }) {
+export async function criarItem(uid, tipo, campos) {
   const ref = doc(colecaoItens(uid));
   await setDoc(ref, {
-    tipo: "comando",
-    projetoId,
-    nome,
-    descricao,
-    etiquetas,
-    passos,
+    tipo,
+    ...camposDoItem(tipo, campos),
     origem: "app",
     vezesCopiado: 0,
     criadoEm: serverTimestamp(),
@@ -63,17 +70,33 @@ export async function criarItem(uid, { projetoId, nome, descricao, etiquetas, pa
 }
 
 // Atualiza só os campos editáveis. tipo, origem, vezesCopiado e criadoEm ficam como estão.
-export function atualizarItem(uid, itemId, { projetoId, nome, descricao, etiquetas, passos }) {
+export function atualizarItem(uid, itemId, tipo, campos) {
   return updateDoc(doc(colecaoItens(uid), itemId), {
-    projetoId,
-    nome,
-    descricao,
-    etiquetas,
-    passos,
+    ...camposDoItem(tipo, campos),
     atualizadoEm: serverTimestamp(),
   });
 }
 
 export function excluirItem(uid, itemId) {
   return deleteDoc(doc(colecaoItens(uid), itemId));
+}
+
+// Soma 1 em vezesCopiado. O increment() é feito no servidor, então duas cópias
+// seguidas (ou em duas abas) não se atropelam.
+export function registrarCopia(uid, itemId) {
+  return updateDoc(doc(colecaoItens(uid), itemId), { vezesCopiado: increment(1) });
+}
+
+// ---------- Cofre (configuração da senha mestra) ----------
+
+// Retorna { salt, iteracoes, verificador, verificadorIv } ou null se ainda não existe.
+export async function lerCofre(uid) {
+  const snap = await getDoc(docCofre(uid));
+  return snap.exists() ? snap.data() : null;
+}
+
+// Grava a configuração do cofre. As regras só permitem CRIAR esse documento,
+// nunca sobrescrever: trocar o salt deixaria todas as senhas ilegíveis.
+export function criarCofre(uid, config) {
+  return setDoc(docCofre(uid), { ...config, criadoEm: serverTimestamp() });
 }

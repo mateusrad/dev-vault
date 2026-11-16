@@ -22,8 +22,8 @@ Atualizado em 16/11/2026.
 3. ~~Copiar/Abrir e busca~~ (pronta e validada pelo Mateus em 16/11/2026)
 4. ~~Editar, excluir, etiquetas e filtro por tipo~~ (pronta e validada pelo Mateus em 16/11/2026)
 5. ~~Atalhos, ordenação por mais usados e ajustes visuais~~ (pronta e validada pelo Mateus em 16/11/2026)
-6. Senhas: senha mestra e criptografia ← **próximo passo**. Revisão técnica 1 feita (aprovada com ressalvas; plano de criptografia aprovado). R-01 aplicado: acesso restrito ao UID do dono, regras publicadas em 16/11/2026 e conta do dono testada (lê e grava normalmente). Falta testar o bloqueio com uma segunda conta Google.
-7. Deploy no GitHub Pages em `vault.msr-dev.com.br` (passos na especificação)
+6. ~~Senhas: senha mestra e criptografia~~ (pronta e validada pelo Mateus em 16/11/2026; regras com o cofre "só cria" publicadas). Testes da criptografia: `node testes/cripto.test.mjs`.
+7. Deploy no GitHub Pages em `vault.msr-dev.com.br` (passos na especificação) ← **próximo passo**. Antes do deploy: auditoria pré-deploy (o app vai guardar dados reais) e os itens 🕓 da revisão 1 (CSP, teste com segunda conta, registro de terceiros no Authentication). Revisão técnica 1 feita: aprovada com ressalvas, plano de criptografia aprovado, R-01 aplicado (acesso restrito ao UID do dono).
 8. Integração com o Claude Code
 
 ## Pendências

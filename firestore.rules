@@ -18,8 +18,11 @@ service cloud.firestore {
     match /users/{uid}/itens/{id} {
       allow read, write: if ehDono(uid);
     }
+    // Configuração da senha mestra: só pode ser lida e criada, nunca alterada nem apagada.
+    // Sobrescrever o salt ou o verificador deixaria todas as senhas ilegíveis.
+    // (Trocar a senha mestra, quando existir, vai exigir mudar esta regra.)
     match /users/{uid}/cofre/{doc} {
-      allow read, write: if ehDono(uid);
+      allow read, create: if ehDono(uid);
     }
   }
 }
