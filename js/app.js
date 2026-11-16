@@ -1,6 +1,6 @@
 // Interface: telas, sidebar de projetos, lista de itens e formulário de novo item.
 import { entrar, sair, aoMudarUsuario, mensagemDeErro } from "./auth.js";
-import { observarProjetos, observarItens, criarProjeto, criarItem } from "./db.js";
+import { observarProjetos, observarItens, criarProjeto, criarItem, registrarCopia } from "./db.js";
 
 // ---------- Estado ----------
 
@@ -13,7 +13,12 @@ const estado = {
   projetosCarregados: false,
   itensCarregados: false,
   projetoAtual: TODOS,   // id do projeto ou "todos"
+  busca: "",             // texto da busca (vazio = sem busca)
 };
+
+// Botões "Copiar" que acabaram de ser usados ("itemId:indice"), para manter o
+// ícone de check mesmo se a lista for redesenhada nesses 2 segundos.
+const copiadosAgora = new Set();
 
 let pararDeObservar = [];
 
@@ -47,6 +52,10 @@ const ICONES = {
   subir: '<path d="M12 19V5M6 11l6-6 6 6"></path>',
   descer: '<path d="M12 5v14M6 13l6 6 6-6"></path>',
   remover: '<path d="M6 6l12 12M18 6L6 18"></path>',
+  copiar: '<rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"></path>',
+  abrir: '<path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path>',
+  lupa: '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>',
 };
 
 function icone(nome, tamanho = 16) {
@@ -153,6 +162,9 @@ function renderizarSidebar() {
 
 function selecionarProjeto(id) {
   estado.projetoAtual = id;
+  // Escolher um projeto sai da busca.
+  estado.busca = "";
+  el("campo-busca").value = "";
   fecharMenu();
   renderizarTudo();
 }
@@ -231,15 +243,22 @@ document.addEventListener("keydown", (e) => {
 // ---------- Lista de itens ----------
 
 function renderizarLista() {
-  const projeto = projetoPorId(estado.projetoAtual) || null;
+  const buscando = estado.busca.trim() !== "";
+  // A busca vale para todos os projetos, então ignora o projeto aberto.
+  const projeto = buscando ? null : (projetoPorId(estado.projetoAtual) || null);
   const emTodos = !projeto;
-  const tituloTexto = emTodos ? "Todos os projetos" : projeto.nome;
 
-  const itens = ordenarPorNome(
-    emTodos ? estado.itens : estado.itens.filter((i) => i.projetoId === estado.projetoAtual),
-  );
+  let tituloTexto;
+  if (buscando) tituloTexto = `Resultados para “${estado.busca.trim()}”`;
+  else tituloTexto = emTodos ? "Todos os projetos" : projeto.nome;
 
-  el("titulo-mobile").textContent = tituloTexto;
+  let itens;
+  if (buscando) itens = buscarItens(estado.busca);
+  else if (emTodos) itens = estado.itens;
+  else itens = estado.itens.filter((i) => i.projetoId === estado.projetoAtual);
+  itens = ordenarPorNome(itens);
+
+  el("titulo-mobile").textContent = buscando ? "Busca" : tituloTexto;
   const carregado = estado.projetosCarregados && estado.itensCarregados;
   el("titulo-lista").replaceChildren(
     h("span", { class: "titulo-lista-nome" }, tituloTexto),
@@ -259,13 +278,86 @@ function renderizarLista() {
   }
   lista.removeAttribute("aria-busy");
 
+  // Redesenhar a lista apaga o elemento com foco (ex.: o botão Copiar que acabou
+  // de ser clicado). Guardamos qual era e devolvemos o foco depois.
+  const foco = document.activeElement?.dataset?.foco;
+
   if (itens.length === 0) {
-    lista.replaceChildren(estadoVazio(projeto));
-    return;
+    lista.replaceChildren(buscando ? semResultados() : estadoVazio(projeto));
+  } else {
+    lista.replaceChildren(...itens.map((item) => cardItem(item, emTodos)));
   }
 
-  lista.replaceChildren(...itens.map((item) => cardItem(item, emTodos)));
+  if (foco) lista.querySelector(`[data-foco="${CSS.escape(foco)}"]`)?.focus();
 }
+
+// ---------- Busca ----------
+
+// Texto pesquisável de um item: nome, descrição, projeto, etiquetas e passos.
+// (Nas senhas, da etapa 6, o valor e o usuário NÃO entram aqui.)
+function textoDoItem(item) {
+  const partes = [
+    item.nome,
+    item.descricao,
+    projetoPorId(item.projetoId)?.nome,
+    ...(item.etiquetas || []),
+    ...(item.passos || []).flatMap((p) => [p.texto, p.comando]),
+  ];
+  return normalizar(partes.filter(Boolean).join(" \n "));
+}
+
+// Cada palavra digitada precisa aparecer no item, em qualquer ordem:
+// "boxhop admin" acha "Acessar o admin do Django" do projeto BoxHop.
+function buscarItens(busca) {
+  const palavras = normalizar(busca).split(/\s+/).filter(Boolean);
+  return estado.itens.filter((item) => {
+    const texto = textoDoItem(item);
+    return palavras.every((p) => texto.includes(p));
+  });
+}
+
+function semResultados() {
+  return h("div", { class: "estado-vazio" },
+    h("div", { class: "estado-vazio-icone" }, icone("lupa", 36)),
+    h("h2", {}, "Nada encontrado"),
+    h("p", {}, "Tente outra palavra. A busca olha nome, descrição, projeto, etiquetas e o texto e o comando dos passos."),
+    h("div", { class: "estado-vazio-acoes" },
+      h("button", { type: "button", class: "btn btn-fantasma", onclick: limparBusca }, "Limpar busca"),
+    ),
+  );
+}
+
+function limparBusca() {
+  estado.busca = "";
+  el("campo-busca").value = "";
+  renderizarLista();
+  el("campo-busca").focus();
+}
+
+el("campo-busca").addEventListener("input", (e) => {
+  estado.busca = e.target.value;
+  renderizarLista();
+});
+
+el("campo-busca").addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && estado.busca) {
+    e.stopPropagation();
+    limparBusca();
+  }
+});
+
+// "/" ou Ctrl+K (Cmd+K no Mac) levam para a busca de qualquer lugar.
+document.addEventListener("keydown", (e) => {
+  if (telas.app.hidden || dialogo.open) return;
+  const digitando = e.target.closest("input, textarea, [contenteditable]");
+  const atalhoK = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k";
+  if (atalhoK || (e.key === "/" && !digitando)) {
+    e.preventDefault();
+    fecharMenu();
+    el("campo-busca").focus();
+    el("campo-busca").select();
+  }
+});
 
 function estadoVazio(projeto) {
   const semProjetos = estado.projetos.length === 0;
@@ -312,6 +404,9 @@ function cardItem(item, mostrarProjeto) {
   const marcadores = [
     mostrarProjeto && projeto ? h("span", { class: "etiqueta-projeto" }, projeto.nome) : null,
     ...(item.etiquetas || []).map((t) => h("span", { class: "etiqueta" }, t)),
+    item.vezesCopiado > 0
+      ? h("span", { class: "contagem-copias" }, `copiado ${item.vezesCopiado}×`)
+      : null,
   ].filter(Boolean);
 
   return h("article", { class: "card" },
@@ -326,12 +421,70 @@ function cardItem(item, mostrarProjeto) {
       marcadores.length ? h("div", { class: "card-marcadores" }, ...marcadores) : null,
     ),
     h("ol", { class: "card-passos" },
-      ...passos.map((passo, i) => passoNoCard(passo, numerar ? i + 1 : null)),
+      ...passos.map((passo, i) => passoNoCard(item, passo, i, numerar ? i + 1 : null)),
     ),
   );
 }
 
-function passoNoCard(passo, numero) {
+// Só http e https viram link. Assim um "javascript:..." salvo como comando nunca é aberto.
+function ehLink(texto) {
+  return /^https?:\/\/\S+$/i.test(texto);
+}
+
+function blocoComando(item, indice, comando) {
+  const chave = `${item.id}:${indice}`;
+  const copiado = copiadosAgora.has(chave);
+  const link = ehLink(comando);
+
+  return h("div", { class: "bloco-codigo" },
+    h("pre", {}, h("code", {}, comando)),
+    h("div", { class: "bloco-acoes" },
+      link
+        ? h("a", {
+          class: "btn-icone",
+          href: comando,
+          target: "_blank",
+          rel: "noopener noreferrer",
+          "aria-label": "Abrir link em nova aba",
+          title: "Abrir",
+          "data-foco": `abrir:${chave}`,
+        }, icone("abrir", 18))
+        : null,
+      h("button", {
+        type: "button",
+        class: `btn-icone btn-copiar${copiado ? " e-copiado" : ""}`,
+        "aria-label": copiado ? "Copiado" : (link ? "Copiar link" : "Copiar comando"),
+        title: "Copiar",
+        "data-foco": `copiar:${chave}`,
+        onclick: () => copiar(item, indice, comando),
+      }, icone(copiado ? "check" : "copiar", 18)),
+    ),
+  );
+}
+
+async function copiar(item, indice, comando) {
+  try {
+    await navigator.clipboard.writeText(comando);
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast("Não foi possível copiar. Selecione o texto e use Ctrl+C.", "erro");
+    return;
+  }
+
+  const chave = `${item.id}:${indice}`;
+  copiadosAgora.add(chave);
+  renderizarLista();
+  mostrarToast("Copiado!");
+  setTimeout(() => {
+    copiadosAgora.delete(chave);
+    renderizarLista();
+  }, 2000);
+
+  // A contagem não é essencial: se falhar (ex.: sem internet), só registra no console.
+  registrarCopia(estado.uid, item.id).catch((erro) => console.error("Erro ao contar cópia:", erro));
+}
+
+function passoNoCard(item, passo, indice, numero) {
   let texto = null;
   if (passo.texto && passo.aviso) {
     texto = h("div", { class: "passo-aviso", role: "note" },
@@ -342,9 +495,7 @@ function passoNoCard(passo, numero) {
     texto = h("p", { class: "passo-texto" }, passo.texto);
   }
 
-  const comando = passo.comando
-    ? h("div", { class: "bloco-codigo" }, h("pre", {}, h("code", {}, passo.comando)))
-    : null;
+  const comando = passo.comando ? blocoComando(item, indice, passo.comando) : null;
 
   return h("li", { class: "passo" },
     numero ? h("span", { class: "passo-numero", "aria-hidden": "true" }, numero) : null,
@@ -563,8 +714,7 @@ el("form-item").addEventListener("submit", async (e) => {
     });
 
     dialogo.close();
-    estado.projetoAtual = projetoId;
-    renderizarTudo();
+    selecionarProjeto(projetoId);
     mostrarToast("Comando salvo");
   } catch (erroFirestore) {
     console.error(erroFirestore);
@@ -647,7 +797,9 @@ aoMudarUsuario((usuario) => {
       projetosCarregados: false,
       itensCarregados: false,
       projetoAtual: TODOS,
+      busca: "",
     });
+    el("campo-busca").value = "";
     mostrarTela("login");
   }
 });

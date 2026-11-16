@@ -5,6 +5,8 @@ import {
   collection,
   doc,
   setDoc,
+  updateDoc,
+  increment,
   onSnapshot,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
@@ -33,6 +35,12 @@ export async function criarProjeto(uid, nome) {
   const ref = doc(colecaoProjetos(uid));
   await setDoc(ref, { nome, criadoEm: serverTimestamp() });
   return ref.id;
+}
+
+// Soma 1 em vezesCopiado. O increment() é feito no servidor, então duas cópias
+// seguidas (ou em duas abas) não se atropelam.
+export function registrarCopia(uid, itemId) {
+  return updateDoc(doc(colecaoItens(uid), itemId), { vezesCopiado: increment(1) });
 }
 
 // Por enquanto só itens do tipo "comando". As senhas chegam na etapa 6.

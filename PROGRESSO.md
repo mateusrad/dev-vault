@@ -15,11 +15,12 @@ Atualizado em 16/11/2026.
 - `CLAUDE.md` do projeto e `.gitignore`.
 - Etapa 1 (código pronto): `index.html`, `css/style.css`, `js/auth.js`, `js/app.js`. Login, logout e login mantido ao recarregar testados pelo Mateus em 16/11/2026: **etapa 1 validada**.
 
-## Falta (etapas da especificação)
+## Etapas da especificação
 
-2. Projetos e itens com passos ← **pronta, falta o Mateus validar** (`js/db.js`, sidebar, cards, formulário com passos). Testados: layout desktop e celular, menu lateral, validação, editor de passos, gravação real (item "Acessar a VPS" no BoxHop) e visual do card com comando e aviso.
-3. Copiar/Abrir e busca
-4. Editar, excluir, etiquetas e filtro por tipo
+1. ~~Login com Google~~ (pronta, commit `81b449a`)
+2. ~~Projetos e itens com passos~~ (pronta, commit `c3d8d2d`)
+3. ~~Copiar/Abrir e busca~~ (pronta e validada pelo Mateus em 16/11/2026)
+4. Editar, excluir, etiquetas e filtro por tipo ← **próximo passo**
 5. Atalhos, ordenação por mais usados e ajustes visuais
 6. Senhas: senha mestra e criptografia
 7. Deploy no GitHub Pages em `vault.msr-dev.com.br` (passos na especificação)
