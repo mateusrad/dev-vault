@@ -41,6 +41,8 @@ Depois, abra **http://localhost:5500** (use `localhost`, não `127.0.0.1`: só o
 ## Estrutura
 
 - `index.html`: telas de carregamento, login e app.
+- `favicon.svg`, `manifest.json` e `icones/`: favicon e PWA instalável (sem service worker).
+- `CNAME`: criado pelo GitHub Pages para o domínio `vault.msr-dev.com.br`. Não apagar.
 - `css/style.css`: tokens de cor (variáveis CSS) e estilos.
 - `js/firebase-config.js`: inicializa o app Firebase.
 - `js/auth.js`: login, logout e observador do usuário.

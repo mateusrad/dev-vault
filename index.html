@@ -12,11 +12,16 @@
     - connect-src: APIs do Firestore e do Firebase Authentication
     - frame-src: iframe e popup do login (authDomain do Firebase e contas Google)
     - img-src: foto do perfil Google
+    - manifest-src: manifest do PWA (manifest.json)
     (frame-ancestors não funciona em <meta>; o GitHub Pages não permite cabeçalhos.)
   -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src https://dev-vault-ee7ab.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src https://dev-vault-ee7ab.firebaseapp.com https://accounts.google.com; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Dev Vault</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <!-- PWA instalável: só manifest e ícones, sem service worker (ver PROGRESSO.md) -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+  <meta name="theme-color" content="#1E2227">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">

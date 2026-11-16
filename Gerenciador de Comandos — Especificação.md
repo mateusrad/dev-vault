@@ -128,7 +128,7 @@ Objetivo: os comandos úteis que aparecem enquanto trabalho num projeto com o Cl
 
 - Exportar e importar em JSON (backup)
 - Variáveis no comando, ex.: `ssh {{usuario}}@{{ip}}`, preenchidas antes de copiar
-- Transformar em PWA instalável
+- ~~Transformar em PWA instalável~~ (feito em 16/11/2026: manifest e ícones, sem service worker; ver `PROGRESSO.md`)
 - Importar as anotações atuais do WhatsApp
 - Ligar um item a outro como pré-requisito (ex.: "Deploy na VPS" depende de "Acessar a VPS"); por enquanto, isso vai no texto do passo
 - Bloqueio automático das senhas após um tempo sem uso

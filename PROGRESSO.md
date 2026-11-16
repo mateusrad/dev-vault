@@ -36,6 +36,6 @@ Atualizado em 16/11/2026.
 - 🕓 Limpar a área de transferência depois de copiar uma senha (sugestão da auditoria; nas ideias para depois).
 - Backups do Firestore exigem o plano Blaze: usar o export em JSON (ideia para depois) como backup.
 
-## Próxima melhoria (depois do deploy)
+## Melhorias depois do deploy
 
-- **PWA instalável** (está nas ideias da especificação): `manifest.json`, ícones e service worker, sem biblioteca. Cuidados: o service worker só guarda em cache os arquivos do app (HTML, CSS, JS, ícones), nunca respostas do Firestore; a CSP precisa liberar `manifest-src 'self'` e `worker-src 'self'`.
+- **PWA instalável** (16/11/2026): `manifest.json`, ícones em `icones/` (gerados a partir do `>_` da marca) e `apple-touch-icon` para o iPhone. CSP com `manifest-src 'self'`. **Sem service worker, de propósito:** o Chrome não exige mais para instalar, e num cofre de senhas um cache de arquivos atrasaria correções de segurança sem dar uso offline (o Firestore e o SDK vêm da internet). Falta: instalar no celular e no computador depois de publicado e confirmar que aparece a opção de instalar.
