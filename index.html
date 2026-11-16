@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Dev Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+
+  <!-- Enquanto o Firebase verifica se já existe login -->
+  <div id="carregando" class="tela-carregando" role="status">
+    <span class="spinner" aria-hidden="true"></span>
+    <span class="sr-only">Carregando…</span>
+  </div>
+
+  <!-- Tela de login -->
+  <main id="tela-login" class="tela-login" hidden>
+    <div class="login-card">
+      <div class="marca">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-5-6-5"></path><path d="M12 19h8"></path></svg>
+        <span>Dev Vault</span>
+      </div>
+      <h1>Seus comandos e senhas, a um atalho de distância.</h1>
+      <p class="texto-secundario">Entre com sua conta Google para acessar o cofre.</p>
+      <button id="btn-entrar" type="button" class="btn btn-secundario btn-grande">
+        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.6-.4-3.5z"/></svg>
+        Entrar com Google
+      </button>
+      <p id="erro-login" class="mensagem-erro" role="alert" hidden></p>
+    </div>
+  </main>
+
+  <!-- App (depois do login) -->
+  <div id="tela-app" class="app" hidden>
+    <aside class="sidebar">
+      <div class="marca">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-5-6-5"></path><path d="M12 19h8"></path></svg>
+        <span>Dev Vault</span>
+      </div>
+
+      <nav aria-label="Projetos" class="sidebar-projetos">
+        <span class="rotulo-secao">Projetos</span>
+        <p class="texto-secundario pequeno">Os projetos aparecem aqui na próxima etapa.</p>
+      </nav>
+
+      <div class="usuario">
+        <img id="usuario-avatar" class="avatar" alt="" referrerpolicy="no-referrer" hidden>
+        <span id="usuario-inicial" class="avatar avatar-inicial" aria-hidden="true"></span>
+        <div class="usuario-dados">
+          <span id="usuario-nome" class="usuario-nome"></span>
+          <span id="usuario-email" class="usuario-email"></span>
+        </div>
+        <button id="btn-sair" type="button" class="btn-icone" aria-label="Sair da conta" title="Sair">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"></path><path d="M10 17l5-5-5-5"></path><path d="M15 12H4"></path></svg>
+        </button>
+      </div>
+    </aside>
+
+    <main class="conteudo">
+      <div class="estado-vazio">
+        <div class="estado-vazio-icone">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+        </div>
+        <h1>Login funcionando</h1>
+        <p class="texto-secundario">Você entrou como <strong id="boas-vindas-email"></strong>. Projetos, itens e busca chegam nas próximas etapas.</p>
+      </div>
+    </main>
+  </div>
+
+  <noscript>
+    <p class="mensagem-erro" style="padding: 24px">O Dev Vault precisa de JavaScript ativado.</p>
+  </noscript>
+</body>
+</html>

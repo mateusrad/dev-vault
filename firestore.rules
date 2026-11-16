@@ -1,0 +1,17 @@
+rules_version = '2';
+
+// Cada usuário só lê e grava os próprios dados, em users/{uid}/...
+// Qualquer outro caminho continua bloqueado (o Firestore nega tudo que não casa com um match).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/projetos/{id} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /users/{uid}/itens/{id} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /users/{uid}/cofre/{doc} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

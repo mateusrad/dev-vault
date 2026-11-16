@@ -1,0 +1,17 @@
+# Segredos (nunca no Git)
+.env
+*.env
+*-firebase-adminsdk-*.json
+service-account*.json
+
+# Material de revisão (repete o que já está no Git)
+docs/revisoes/
+
+# Firebase local
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Sistema
+Thumbs.db
+.DS_Store
