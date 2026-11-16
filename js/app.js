@@ -1,6 +1,14 @@
 // Interface: telas, sidebar de projetos, lista de itens e formulário de novo item.
 import { entrar, sair, aoMudarUsuario, mensagemDeErro } from "./auth.js";
-import { observarProjetos, observarItens, criarProjeto, criarItem, registrarCopia } from "./db.js";
+import {
+  observarProjetos,
+  observarItens,
+  criarProjeto,
+  criarItem,
+  atualizarItem,
+  excluirItem,
+  registrarCopia,
+} from "./db.js";
 
 // ---------- Estado ----------
 
@@ -14,6 +22,7 @@ const estado = {
   itensCarregados: false,
   projetoAtual: TODOS,   // id do projeto ou "todos"
   busca: "",             // texto da busca (vazio = sem busca)
+  filtroTipo: "todos",   // "todos", "comando" ou "senha"
 };
 
 // Botões "Copiar" que acabaram de ser usados ("itemId:indice"), para manter o
@@ -56,6 +65,8 @@ const ICONES = {
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"></path>',
   abrir: '<path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path>',
   lupa: '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>',
+  editar: '<path d="M4 20h4L19 9l-4-4L4 16v4z"></path><path d="M13.5 6.5l4 4"></path>',
+  lixeira: '<path d="M4 7h16"></path><path d="M10 11v6M14 11v6"></path><path d="M6 7l1 13h10l1-13"></path><path d="M9 7V4h6v3"></path>',
 };
 
 function icone(nome, tamanho = 16) {
@@ -256,6 +267,11 @@ function renderizarLista() {
   if (buscando) itens = buscarItens(estado.busca);
   else if (emTodos) itens = estado.itens;
   else itens = estado.itens.filter((i) => i.projetoId === estado.projetoAtual);
+
+  // Filtro por tipo (Todos, Comandos, Senhas), aplicado depois do projeto ou da busca.
+  renderizarFiltroTipo(itens);
+  const totalAntesDoFiltro = itens.length;
+  if (estado.filtroTipo !== TODOS) itens = itens.filter((i) => tipoDo(i) === estado.filtroTipo);
   itens = ordenarPorNome(itens);
 
   el("titulo-mobile").textContent = buscando ? "Busca" : tituloTexto;
@@ -283,7 +299,11 @@ function renderizarLista() {
   const foco = document.activeElement?.dataset?.foco;
 
   if (itens.length === 0) {
-    lista.replaceChildren(buscando ? semResultados() : estadoVazio(projeto));
+    let vazio;
+    if (totalAntesDoFiltro > 0) vazio = semItensDoTipo();
+    else if (buscando) vazio = semResultados();
+    else vazio = estadoVazio(projeto);
+    lista.replaceChildren(vazio);
   } else {
     lista.replaceChildren(...itens.map((item) => cardItem(item, emTodos)));
   }
@@ -327,6 +347,105 @@ function semResultados() {
   );
 }
 
+// Clicar numa etiqueta busca por ela.
+function buscarPor(texto) {
+  estado.busca = texto;
+  el("campo-busca").value = texto;
+  renderizarLista();
+  window.scrollTo({ top: 0 });
+}
+
+// ---------- Filtro por tipo ----------
+
+const TIPOS = [
+  { valor: TODOS, rotulo: "Todos" },
+  { valor: "comando", rotulo: "Comandos" },
+  { valor: "senha", rotulo: "Senhas" },
+];
+
+// Itens antigos sem o campo "tipo" contam como comando.
+function tipoDo(item) {
+  return item.tipo || "comando";
+}
+
+function renderizarFiltroTipo(itens) {
+  const contagem = { [TODOS]: itens.length, comando: 0, senha: 0 };
+  for (const item of itens) contagem[tipoDo(item)] = (contagem[tipoDo(item)] || 0) + 1;
+
+  el("filtro-tipo").replaceChildren(...TIPOS.map(({ valor, rotulo }) =>
+    h("button", {
+      type: "button",
+      class: "filtro-opcao",
+      "aria-pressed": estado.filtroTipo === valor ? "true" : "false",
+      "data-foco": `filtro:${valor}`,
+      onclick: () => {
+        estado.filtroTipo = valor;
+        renderizarLista();
+      },
+    }, rotulo, h("span", { class: "filtro-contagem" }, contagem[valor])),
+  ));
+}
+
+function semItensDoTipo() {
+  const rotulo = estado.filtroTipo === "senha" ? "Nenhuma senha aqui" : "Nenhum comando aqui";
+  return h("div", { class: "estado-vazio" },
+    h("div", { class: "estado-vazio-icone" }, icone("pasta", 36)),
+    h("h2", {}, rotulo),
+    h("p", {}, estado.filtroTipo === "senha"
+      ? "As senhas chegam numa próxima etapa, com criptografia pela senha mestra."
+      : "Os itens desta lista são de outro tipo."),
+    h("div", { class: "estado-vazio-acoes" },
+      h("button", {
+        type: "button",
+        class: "btn btn-fantasma",
+        onclick: () => { estado.filtroTipo = TODOS; renderizarLista(); },
+      }, "Mostrar todos os tipos"),
+    ),
+  );
+}
+
+// ---------- Exclusão ----------
+
+const dialogoExcluir = el("dlg-excluir");
+let itemParaExcluir = null;
+
+function pedirExclusao(item) {
+  itemParaExcluir = item;
+  el("excluir-nome").textContent = item.nome;
+  dialogoExcluir.showModal();
+  // O foco começa em "Cancelar": apertar Enter por engano não apaga nada.
+  el("btn-cancelar-exclusao").focus();
+}
+
+el("btn-cancelar-exclusao").addEventListener("click", () => dialogoExcluir.close());
+
+el("btn-confirmar-exclusao").addEventListener("click", async () => {
+  const item = itemParaExcluir;
+  if (!item) return;
+  const botao = el("btn-confirmar-exclusao");
+  botao.disabled = true;
+  try {
+    await excluirItem(estado.uid, item.id);
+    dialogoExcluir.close();
+    mostrarToast(`"${item.nome}" excluído`);
+  } catch (erro) {
+    console.error(erro);
+    mostrarToast("Não foi possível excluir. Tente de novo.", "erro");
+  } finally {
+    botao.disabled = false;
+  }
+});
+
+dialogoExcluir.addEventListener("close", () => {
+  // Cancelou: o foco volta para o botão Excluir do item.
+  // Excluiu: o botão não existe mais, então o foco vai para o título da lista
+  // (e não para a busca, que no celular abriria o teclado).
+  const botaoDoItem = itemParaExcluir
+    && document.querySelector(`[data-foco="${CSS.escape(`excluir:${itemParaExcluir.id}`)}"]`);
+  itemParaExcluir = null;
+  (botaoDoItem || el("titulo-lista")).focus({ preventScroll: true });
+});
+
 function limparBusca() {
   estado.busca = "";
   el("campo-busca").value = "";
@@ -348,7 +467,7 @@ el("campo-busca").addEventListener("keydown", (e) => {
 
 // "/" ou Ctrl+K (Cmd+K no Mac) levam para a busca de qualquer lugar.
 document.addEventListener("keydown", (e) => {
-  if (telas.app.hidden || dialogo.open) return;
+  if (telas.app.hidden || document.querySelector("dialog[open]")) return;
   const digitando = e.target.closest("input, textarea, [contenteditable]");
   const atalhoK = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k";
   if (atalhoK || (e.key === "/" && !digitando)) {
@@ -403,7 +522,13 @@ function cardItem(item, mostrarProjeto) {
 
   const marcadores = [
     mostrarProjeto && projeto ? h("span", { class: "etiqueta-projeto" }, projeto.nome) : null,
-    ...(item.etiquetas || []).map((t) => h("span", { class: "etiqueta" }, t)),
+    ...(item.etiquetas || []).map((t) => h("button", {
+      type: "button",
+      class: "etiqueta",
+      title: `Buscar "${t}"`,
+      "data-foco": `etiqueta:${item.id}:${t}`,
+      onclick: () => buscarPor(t),
+    }, t)),
     item.vezesCopiado > 0
       ? h("span", { class: "contagem-copias" }, `copiado ${item.vezesCopiado}×`)
       : null,
@@ -418,7 +543,26 @@ function cardItem(item, mostrarProjeto) {
           : null,
       ),
       item.descricao ? h("p", { class: "card-descricao" }, item.descricao) : null,
-      marcadores.length ? h("div", { class: "card-marcadores" }, ...marcadores) : null,
+      h("div", { class: "card-marcadores" },
+        ...marcadores,
+        h("span", { class: "espacador" }),
+        h("button", {
+          type: "button",
+          class: "btn-icone btn-icone-pequeno",
+          "aria-label": `Editar "${item.nome}"`,
+          title: "Editar",
+          "data-foco": `editar:${item.id}`,
+          onclick: () => abrirFormItem(item),
+        }, icone("editar")),
+        h("button", {
+          type: "button",
+          class: "btn-icone btn-icone-pequeno btn-perigo",
+          "aria-label": `Excluir "${item.nome}"`,
+          title: "Excluir",
+          "data-foco": `excluir:${item.id}`,
+          onclick: () => pedirExclusao(item),
+        }, icone("lixeira")),
+      ),
     ),
     h("ol", { class: "card-passos" },
       ...passos.map((passo, i) => passoNoCard(item, passo, i, numerar ? i + 1 : null)),
@@ -521,25 +665,48 @@ function passoVazio() {
   return { texto: "", comando: "", aviso: false };
 }
 
-function abrirFormItem() {
+// id do item em edição, ou null quando o formulário é de item novo.
+let itemEditando = null;
+
+// Sem argumento: item novo. Com um item: edição, com os campos já preenchidos.
+function abrirFormItem(item = null) {
   fecharMenu();
   el("form-item").reset();
   limparErrosItem();
-  passosForm = [passoVazio()];
-  renderizarPassosForm();
+  itemEditando = item ? item.id : null;
 
-  // Já vem com o projeto aberto (ou o único projeto, se só houver um).
-  const projeto = projetoPorId(estado.projetoAtual)
-    || (estado.projetos.length === 1 ? estado.projetos[0] : null);
+  el("titulo-dlg-item").textContent = item ? "Editar comando" : "Novo comando";
+  el("btn-salvar-item").textContent = item ? "Salvar alterações" : "Salvar comando";
+
+  let projeto;
+  if (item) {
+    projeto = projetoPorId(item.projetoId);
+    el("f-nome").value = item.nome || "";
+    el("f-descricao").value = item.descricao || "";
+    el("f-etiquetas").value = (item.etiquetas || []).join(", ");
+    // Cópia dos passos: editar no formulário não mexe no item até salvar.
+    passosForm = (item.passos || []).map((p) => ({
+      texto: p.texto || "",
+      comando: p.comando || "",
+      aviso: Boolean(p.aviso),
+    }));
+    if (passosForm.length === 0) passosForm = [passoVazio()];
+  } else {
+    // Já vem com o projeto aberto (ou o único projeto, se só houver um).
+    projeto = projetoPorId(estado.projetoAtual)
+      || (estado.projetos.length === 1 ? estado.projetos[0] : null);
+    passosForm = [passoVazio()];
+  }
   el("f-projeto").value = projeto ? projeto.nome : "";
+  renderizarPassosForm();
 
   dialogo.showModal();
   (projeto ? el("f-nome") : el("f-projeto")).focus();
 }
 
 dialogo.querySelectorAll("[data-fechar]").forEach((b) => b.addEventListener("click", () => dialogo.close()));
-el("btn-novo-item").addEventListener("click", abrirFormItem);
-el("btn-novo-item-mobile").addEventListener("click", abrirFormItem);
+el("btn-novo-item").addEventListener("click", () => abrirFormItem());
+el("btn-novo-item-mobile").addEventListener("click", () => abrirFormItem());
 
 // O textarea do comando cresce conforme o texto.
 function ajustarAltura(textarea) {
@@ -705,23 +872,28 @@ el("form-item").addEventListener("submit", async (e) => {
     let projeto = projetoPorNome(dados.nomeProjeto);
     const projetoId = projeto ? projeto.id : await criarProjeto(estado.uid, dados.nomeProjeto);
 
-    await criarItem(estado.uid, {
+    const campos = {
       projetoId,
       nome: dados.nome,
       descricao: dados.descricao,
       etiquetas: dados.etiquetas,
       passos: dados.passos,
-    });
+    };
+    const editando = itemEditando !== null;
+    if (editando) await atualizarItem(estado.uid, itemEditando, campos);
+    else await criarItem(estado.uid, campos);
 
     dialogo.close();
-    selecionarProjeto(projetoId);
-    mostrarToast("Comando salvo");
+    // Ao editar, fica onde estava (inclusive na busca). Item novo leva ao projeto dele.
+    if (editando) renderizarTudo();
+    else selecionarProjeto(projetoId);
+    mostrarToast(editando ? "Alterações salvas" : "Comando salvo");
   } catch (erroFirestore) {
     console.error(erroFirestore);
     mostrarToast("Não foi possível salvar. Verifique a conexão e tente de novo.", "erro");
   } finally {
     botao.disabled = false;
-    botao.textContent = "Salvar comando";
+    botao.textContent = itemEditando !== null ? "Salvar alterações" : "Salvar comando";
   }
 });
 
@@ -789,7 +961,7 @@ aoMudarUsuario((usuario) => {
     iniciarObservadores(usuario.uid);
   } else {
     pararObservadores();
-    if (dialogo.open) dialogo.close();
+    document.querySelectorAll("dialog[open]").forEach((d) => d.close());
     Object.assign(estado, {
       uid: null,
       projetos: [],
@@ -798,6 +970,7 @@ aoMudarUsuario((usuario) => {
       itensCarregados: false,
       projetoAtual: TODOS,
       busca: "",
+      filtroTipo: TODOS,
     });
     el("campo-busca").value = "";
     mostrarTela("login");

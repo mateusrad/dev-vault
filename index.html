@@ -103,7 +103,10 @@
             <input id="campo-busca" type="search" autocomplete="off" spellcheck="false" placeholder="Buscar em todos os projetos" aria-keyshortcuts="Control+K /">
             <div class="busca-atalho" aria-hidden="true"><kbd>Ctrl</kbd><kbd>K</kbd></div>
           </div>
-          <h1 id="titulo-lista" class="titulo-lista"></h1>
+          <div class="cabecalho-lista">
+            <h1 id="titulo-lista" class="titulo-lista" tabindex="-1"></h1>
+            <div id="filtro-tipo" class="filtro-tipo" role="group" aria-label="Filtrar por tipo"></div>
+          </div>
           <div id="lista-itens" class="lista-itens" aria-live="polite"></div>
         </div>
       </main>
@@ -165,6 +168,18 @@
         <button id="btn-salvar-item" type="submit" class="btn btn-primario">Salvar comando</button>
       </footer>
     </form>
+  </dialog>
+
+  <!-- Confirmação de exclusão -->
+  <dialog id="dlg-excluir" class="dialogo dialogo-pequeno" aria-labelledby="titulo-dlg-excluir" aria-describedby="texto-dlg-excluir">
+    <div class="dialogo-corpo">
+      <h2 id="titulo-dlg-excluir" class="dialogo-titulo">Excluir item?</h2>
+      <p id="texto-dlg-excluir"><strong id="excluir-nome"></strong> será apagado de vez. Não dá para desfazer.</p>
+    </div>
+    <footer class="dialogo-rodape">
+      <button id="btn-cancelar-exclusao" type="button" class="btn btn-fantasma">Cancelar</button>
+      <button id="btn-confirmar-exclusao" type="button" class="btn btn-perigo-solido">Excluir</button>
+    </footer>
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>

@@ -595,6 +595,63 @@ textarea[aria-invalid="true"] { border-color: var(--cor-erro); }
 
 .contagem-copias { margin-left: 6px; font-size: 12px; color: var(--cor-texto-secundario); }
 
+.espacador { flex-grow: 1; }
+
+.btn-icone-pequeno { width: 36px; height: 36px; }
+.btn-perigo { color: var(--cor-erro); }
+.btn-perigo:hover { color: var(--cor-erro); }
+
+.btn-perigo-solido { border: 0; background: var(--cor-erro); color: var(--cor-fundo); }
+.btn-perigo-solido:hover:not(:disabled) { background: #E8868D; }
+
+button.etiqueta { background: transparent; cursor: pointer; }
+button.etiqueta:hover { background: var(--cor-borda); }
+
+/* ---------- Cabeçalho da lista e filtro por tipo ---------- */
+
+.cabecalho-lista {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.titulo-lista:focus { outline: none; }
+
+.filtro-tipo {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  background: var(--cor-fundo);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio-medio);
+}
+
+.filtro-opcao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--raio-pequeno);
+  background: transparent;
+  color: var(--cor-texto-secundario);
+  font: 500 13px var(--fonte-ui);
+  cursor: pointer;
+}
+.filtro-opcao:hover { color: var(--cor-texto-forte); }
+.filtro-opcao[aria-pressed="true"] { background: var(--cor-borda); color: var(--cor-texto-forte); }
+
+.filtro-contagem { font: 12px var(--fonte-codigo); color: var(--cor-texto-secundario); }
+
+/* ---------- Diálogo pequeno (confirmação) ---------- */
+
+.dialogo-pequeno { width: min(420px, calc(100vw - 32px)); }
+.dialogo-pequeno .dialogo-corpo { gap: 12px; padding: 24px; }
+.dialogo-titulo { font-size: 18px; font-weight: 600; color: var(--cor-texto-forte); }
+.dialogo-pequeno strong { font-weight: 600; color: var(--cor-texto-forte); overflow-wrap: anywhere; }
+
 /* ---------- Busca ---------- */
 
 .busca {
@@ -905,6 +962,9 @@ kbd {
   .busca input { height: 48px; padding-right: 14px; }
   .busca-atalho { display: none; }
   .bloco-acoes .btn-icone { width: 44px; height: 44px; }
+  .btn-icone-pequeno { width: 44px; height: 44px; }
+  .filtro-tipo { width: 100%; }
+  .filtro-opcao { flex: 1 1 0; justify-content: center; min-height: 40px; }
   .card { padding: 14px; }
   .grade-2 { grid-template-columns: minmax(0, 1fr); }
   .dialogo-corpo { padding: 16px; }

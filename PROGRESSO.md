@@ -20,8 +20,8 @@ Atualizado em 16/11/2026.
 1. ~~Login com Google~~ (pronta, commit `81b449a`)
 2. ~~Projetos e itens com passos~~ (pronta, commit `c3d8d2d`)
 3. ~~Copiar/Abrir e busca~~ (pronta e validada pelo Mateus em 16/11/2026)
-4. Editar, excluir, etiquetas e filtro por tipo ← **próximo passo**
-5. Atalhos, ordenação por mais usados e ajustes visuais
+4. ~~Editar, excluir, etiquetas e filtro por tipo~~ (pronta e validada pelo Mateus em 16/11/2026)
+5. Atalhos, ordenação por mais usados e ajustes visuais ← **próximo passo** (Ctrl+K e `/` já funcionam desde a etapa 3)
 6. Senhas: senha mestra e criptografia
 7. Deploy no GitHub Pages em `vault.msr-dev.com.br` (passos na especificação)
 8. Integração com o Claude Code

@@ -6,6 +6,7 @@ import {
   doc,
   setDoc,
   updateDoc,
+  deleteDoc,
   increment,
   onSnapshot,
   serverTimestamp,
@@ -59,4 +60,20 @@ export async function criarItem(uid, { projetoId, nome, descricao, etiquetas, pa
     atualizadoEm: serverTimestamp(),
   });
   return ref.id;
+}
+
+// Atualiza só os campos editáveis. tipo, origem, vezesCopiado e criadoEm ficam como estão.
+export function atualizarItem(uid, itemId, { projetoId, nome, descricao, etiquetas, passos }) {
+  return updateDoc(doc(colecaoItens(uid), itemId), {
+    projetoId,
+    nome,
+    descricao,
+    etiquetas,
+    passos,
+    atualizadoEm: serverTimestamp(),
+  });
+}
+
+export function excluirItem(uid, itemId) {
+  return deleteDoc(doc(colecaoItens(uid), itemId));
 }
