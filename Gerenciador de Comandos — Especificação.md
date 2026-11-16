@@ -76,7 +76,7 @@ Documento do cofre: `users/{uid}/cofre/config`
 
 ## Regras de segurança do Firestore
 
-Só a conta do dono lê e grava, e só na própria pasta. A versão em vigor está em `firestore.rules`: a função `ehDono(uid)` exige `request.auth.uid == uid` **e** que esse `uid` seja o UID fixo da conta do Mateus. Outras contas Google conseguem fazer login, mas o banco recusa tudo, e o app as desconecta com a mensagem "não tem acesso" (revisão técnica R-01, 16/11/2026: sem isso, qualquer pessoa poderia gastar a cota gratuita). O UID é usado no lugar do e-mail porque o arquivo vai para um repositório público.
+Só a conta do dono lê e grava, e só na própria pasta. A versão em vigor está em `firestore.rules`: a função `ehDono(uid)` exige `request.auth.uid == uid` **e** que esse `uid` seja o UID fixo da conta do Mateus. Outras contas Google conseguem fazer login, mas o banco recusa tudo, e o app mostra a mensagem "não tem acesso" e apaga na hora o registro dessa conta no Firebase Authentication (conformidade C-01; a tela de login avisa isso) (revisão técnica R-01, 16/11/2026: sem isso, qualquer pessoa poderia gastar a cota gratuita). O UID é usado no lugar do e-mail porque o arquivo vai para um repositório público.
 
 ## Estrutura de arquivos
 
@@ -133,3 +133,4 @@ Objetivo: os comandos úteis que aparecem enquanto trabalho num projeto com o Cl
 - Ligar um item a outro como pré-requisito (ex.: "Deploy na VPS" depende de "Acessar a VPS"); por enquanto, isso vai no texto do passo
 - Bloqueio automático das senhas após um tempo sem uso
 - Trocar a senha mestra
+- Limpar a área de transferência um tempo depois de copiar uma senha (auditoria pré-deploy; só funciona com a aba em foco)

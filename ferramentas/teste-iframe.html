@@ -1,0 +1,18 @@
+<!doctype html>
+<!--
+  Teste manual da proteção contra clickjacking (revisão R-03).
+  Com o servidor de desenvolvimento rodando, abra http://localhost:5500/ferramentas/teste-iframe.html
+  Os dois quadros devem mostrar "O Dev Vault não funciona dentro de outra página" (e nunca o app).
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Teste: Dev Vault dentro de iframe</title>
+</head>
+<body>
+  <p>Iframe normal:</p>
+  <iframe src="/" width="700" height="360" title="Dev Vault em iframe"></iframe>
+  <p>Iframe com sandbox (bloqueia o redirecionamento da página de cima):</p>
+  <iframe src="/" width="700" height="360" sandbox="allow-scripts allow-same-origin" title="Dev Vault em iframe com sandbox"></iframe>
+</body>
+</html>

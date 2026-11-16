@@ -6,6 +6,7 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged,
+  deleteUser,
 } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 
 // UID da única conta com acesso (o mesmo que está em firestore.rules).
@@ -25,6 +26,24 @@ export function entrar() {
 
 export function sair() {
   return signOut(auth);
+}
+
+// Conformidade C-01: quem entra com outra conta Google não tem acesso, mas o
+// Firebase Authentication registra a conta (e-mail, nome e foto) mesmo assim.
+// Para não guardar dados de terceiros sem finalidade, a conta se apaga na hora.
+// Apagar a conta do Firebase não mexe na conta Google da pessoa.
+// Nunca apaga a conta do dono: se apagasse, o próximo login geraria outro UID
+// e o dono perderia o acesso até mudar as regras.
+export async function apagarContaSemAcesso(usuario) {
+  if (!usuario || usuario.uid === UID_DONO) return;
+  try {
+    await deleteUser(usuario); // também desconecta
+  } catch (erro) {
+    // Ex.: login antigo restaurado pelo navegador (o Firebase pede login recente
+    // para apagar). Nesse caso só desconecta; o registro fica para limpar no console.
+    console.error(erro);
+    await signOut(auth);
+  }
 }
 
 // Chama o callback com o usuário logado, ou null, sempre que o estado muda

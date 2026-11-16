@@ -69,6 +69,8 @@ a:hover { color: var(--cor-primaria-hover); }
   font-size: 13px;
 }
 
+.aviso-sem-js { padding: 24px; }
+
 /* ---------- Botões ---------- */
 
 .btn {
@@ -80,6 +82,7 @@ a:hover { color: var(--cor-primaria-hover); }
   padding: 0 16px;
   border-radius: var(--raio-pequeno);
   font: 500 14px var(--fonte-ui);
+  text-decoration: none;
   cursor: pointer;
 }
 

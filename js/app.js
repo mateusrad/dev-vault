@@ -1,5 +1,5 @@
 // Interface: telas, sidebar de projetos, lista de itens e formulário de novo item.
-import { entrar, sair, aoMudarUsuario, mensagemDeErro, UID_DONO } from "./auth.js";
+import { entrar, sair, aoMudarUsuario, mensagemDeErro, apagarContaSemAcesso, UID_DONO } from "./auth.js";
 import {
   observarProjetos,
   observarItens,
@@ -128,6 +128,7 @@ const telas = {
   carregando: el("carregando"),
   login: el("tela-login"),
   app: el("tela-app"),
+  iframe: el("tela-iframe"),
 };
 
 function mostrarTela(nome) {
@@ -1452,13 +1453,13 @@ el("btn-sair").addEventListener("click", () => {
   sair();
 });
 
-aoMudarUsuario((usuario) => {
-  // Conta sem acesso: desconecta e explica na tela de login.
+function aoTrocarUsuario(usuario) {
+  // Conta sem acesso: apaga o registro dela no Firebase (C-01) e explica na tela de login.
   if (usuario && usuario.uid !== UID_DONO) {
     const erro = el("erro-login");
     erro.textContent = `A conta ${usuario.email || "escolhida"} não tem acesso a este cofre.`;
     erro.hidden = false;
-    sair();
+    apagarContaSemAcesso(usuario);
     return;
   }
 
@@ -1492,4 +1493,16 @@ aoMudarUsuario((usuario) => {
     el("campo-busca").value = "";
     mostrarTela("login");
   }
-});
+}
+
+// Proteção contra clickjacking (revisão R-03): outro site poderia carregar o app
+// num iframe invisível e induzir cliques (ex.: excluir um item). O cabeçalho que
+// impediria isso (frame-ancestors) não funciona em <meta>, e o GitHub Pages não
+// permite cabeçalhos próprios. Então, dentro de um iframe, o app nem começa.
+// Só redirecionar a página de cima não basta: um iframe com "sandbox" bloqueia isso.
+if (window.self !== window.top) {
+  el("link-abrir-direto").href = window.location.href;
+  mostrarTela("iframe");
+} else {
+  aoMudarUsuario(aoTrocarUsuario);
+}
