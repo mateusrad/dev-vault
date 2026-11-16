@@ -19,7 +19,7 @@ O design de referência é o canvas "Dev Vault — Telas" (artefato no claude.ai
 - Firebase SDK modular via CDN (`https://www.gstatic.com/firebasejs/<versão>/...`). Todos os imports usam a **mesma versão** (hoje 12.0.0). Para atualizar, troque o número em todos os arquivos de `js/`.
 - Firebase Authentication (Google) e Cloud Firestore.
 - Web Crypto API para as senhas (etapa 6).
-- Hospedagem: GitHub Pages.
+- Hospedagem: GitHub Pages no subdomínio próprio `vault.msr-dev.com.br` (origem separada dos outros sites do GitHub Pages; ver a especificação). O DNS do domínio fica no Registro.br.
 
 ## Firebase
 
@@ -30,10 +30,10 @@ O design de referência é o canvas "Dev Vault — Telas" (artefato no claude.ai
 
 ## Como rodar localmente
 
-Módulos ES não funcionam abrindo o arquivo direto (`file://`). É preciso um servidor local:
+Módulos ES não funcionam abrindo o arquivo direto (`file://`). É preciso um servidor local. Use o servidor de desenvolvimento, que desliga o cache do navegador (com o `python -m http.server`, o navegador às vezes mostra CSS e JS antigos):
 
 ```
-python -m http.server 5500
+python ferramentas/servidor_dev.py
 ```
 
 Depois, abra **http://localhost:5500** (use `localhost`, não `127.0.0.1`: só o `localhost` está nos domínios autorizados do Firebase).

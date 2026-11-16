@@ -38,15 +38,36 @@
 
   <!-- App (depois do login) -->
   <div id="tela-app" class="app" hidden>
-    <aside class="sidebar">
+    <div id="fundo-menu" class="fundo-menu" hidden></div>
+
+    <aside id="sidebar" class="sidebar" aria-label="Menu">
       <div class="marca">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-5-6-5"></path><path d="M12 19h8"></path></svg>
         <span>Dev Vault</span>
       </div>
 
-      <nav aria-label="Projetos" class="sidebar-projetos">
-        <span class="rotulo-secao">Projetos</span>
-        <p class="texto-secundario pequeno">Os projetos aparecem aqui na próxima etapa.</p>
+      <button id="btn-novo-item" type="button" class="btn btn-primario">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        Novo item
+      </button>
+
+      <nav aria-labelledby="rotulo-projetos" class="sidebar-projetos">
+        <span id="rotulo-projetos" class="rotulo-secao">Projetos</span>
+        <div id="lista-projetos" class="lista-projetos"></div>
+
+        <button id="btn-novo-projeto" type="button" class="btn-link-sidebar">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          Novo projeto
+        </button>
+        <form id="form-novo-projeto" class="form-novo-projeto" novalidate hidden>
+          <label for="campo-novo-projeto" class="sr-only">Nome do novo projeto</label>
+          <input id="campo-novo-projeto" type="text" maxlength="60" placeholder="Nome do projeto" autocomplete="off">
+          <p id="erro-novo-projeto" class="mensagem-erro" hidden></p>
+          <div class="form-novo-projeto-acoes">
+            <button type="button" id="btn-cancelar-projeto" class="btn btn-fantasma btn-pequeno">Cancelar</button>
+            <button type="submit" class="btn btn-primario btn-pequeno">Criar</button>
+          </div>
+        </form>
       </nav>
 
       <div class="usuario">
@@ -62,16 +83,85 @@
       </div>
     </aside>
 
-    <main class="conteudo">
-      <div class="estado-vazio">
-        <div class="estado-vazio-icone">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+    <div class="principal">
+      <!-- Só aparece no celular -->
+      <header class="topo-mobile">
+        <button id="btn-menu" type="button" class="btn-icone" aria-label="Abrir menu de projetos" aria-controls="sidebar" aria-expanded="false">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+        </button>
+        <span id="titulo-mobile" class="titulo-mobile"></span>
+        <button id="btn-novo-item-mobile" type="button" class="btn-icone btn-icone-primario" aria-label="Novo item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        </button>
+      </header>
+
+      <main class="conteudo">
+        <div class="conteudo-largura">
+          <h1 id="titulo-lista" class="titulo-lista"></h1>
+          <div id="lista-itens" class="lista-itens" aria-live="polite"></div>
         </div>
-        <h1>Login funcionando</h1>
-        <p class="texto-secundario">Você entrou como <strong id="boas-vindas-email"></strong>. Projetos, itens e busca chegam nas próximas etapas.</p>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
+
+  <!-- Formulário de novo item -->
+  <dialog id="dlg-item" class="dialogo" aria-labelledby="titulo-dlg-item">
+    <form id="form-item" class="dialogo-form" novalidate>
+      <header class="dialogo-topo">
+        <h2 id="titulo-dlg-item">Novo comando</h2>
+        <button type="button" class="btn-icone" data-fechar aria-label="Fechar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </header>
+
+      <div class="dialogo-corpo">
+        <div class="grade-2">
+          <div class="campo">
+            <label for="f-projeto">Projeto <span class="opcional">(obrigatório)</span></label>
+            <input id="f-projeto" type="text" list="nomes-projetos" maxlength="60" autocomplete="off" placeholder="Escolha ou digite um novo" aria-describedby="f-projeto-ajuda f-projeto-erro">
+            <datalist id="nomes-projetos"></datalist>
+            <p id="f-projeto-ajuda" class="ajuda">Se o projeto não existir, ele é criado.</p>
+            <p id="f-projeto-erro" class="mensagem-erro" hidden></p>
+          </div>
+          <div class="campo">
+            <label for="f-nome">Nome <span class="opcional">(obrigatório)</span></label>
+            <input id="f-nome" type="text" maxlength="120" autocomplete="off" placeholder="Ex.: Acessar o admin do Django" aria-describedby="f-nome-erro">
+            <p id="f-nome-erro" class="mensagem-erro" hidden></p>
+          </div>
+        </div>
+
+        <fieldset class="campo-passos" aria-describedby="f-passos-erro">
+          <legend>Passos <span class="opcional">(pelo menos um)</span></legend>
+          <div id="lista-passos-form" class="lista-passos-form"></div>
+          <p id="f-passos-erro" class="mensagem-erro" hidden></p>
+          <button id="btn-add-passo" type="button" class="btn btn-fantasma btn-tracejado">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+            Adicionar passo
+          </button>
+        </fieldset>
+
+        <div class="grade-2">
+          <div class="campo">
+            <label for="f-etiquetas">Etiquetas <span class="opcional">(opcional)</span></label>
+            <input id="f-etiquetas" type="text" maxlength="200" autocomplete="off" placeholder="Separe por vírgula. Ex.: Docker, SSH">
+          </div>
+          <div class="campo">
+            <label for="f-descricao">Descrição <span class="opcional">(opcional)</span></label>
+            <input id="f-descricao" type="text" maxlength="300" autocomplete="off" placeholder="Para que serve">
+          </div>
+        </div>
+
+        <p class="ajuda">Nome, descrição e etiquetas não são criptografados. Não coloque senhas ou tokens nesses campos nem nos comandos.</p>
+      </div>
+
+      <footer class="dialogo-rodape">
+        <button type="button" class="btn btn-fantasma" data-fechar>Cancelar</button>
+        <button id="btn-salvar-item" type="submit" class="btn btn-primario">Salvar comando</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <noscript>
     <p class="mensagem-erro" style="padding: 24px">O Dev Vault precisa de JavaScript ativado.</p>

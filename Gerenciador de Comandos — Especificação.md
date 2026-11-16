@@ -9,7 +9,7 @@ App web pessoal pra guardar comandos de terminal (VPN, deploy, SSH etc.) e senha
 - HTML, CSS e JavaScript puro (sem framework na primeira versão)
 - Firebase Authentication com login do Google
 - Cloud Firestore como banco
-- Hospedagem no GitHub Pages (repositório do mateusrad)
+- Hospedagem no GitHub Pages (repositório do mateusrad), com o subdomínio próprio **`vault.msr-dev.com.br`** (decisão de 16/11/2026). Motivo: no endereço padrão, o app dividiria a origem com os outros sites do GitHub Pages (inclusive o portfólio, que já usa `portfolio.msr-dev.com.br`), e qualquer script desses sites poderia ler a sessão do Firebase guardada no navegador. Com o subdomínio, o Dev Vault tem origem própria.
 - Firebase SDK modular (v10 ou mais recente) importado via CDN
 - Web Crypto API (nativa do navegador, sem biblioteca extra) para criptografar as senhas
 
@@ -111,7 +111,7 @@ Feito em 16/11/2026: projeto `dev-vault` (ID `dev-vault-ee7ab`), plano **Spark**
 
 1. Criar projeto no console do Firebase.
 2. Ativar Authentication com o provedor Google.
-3. Em Authentication, Domínios autorizados, adicionar `mateusrad.github.io`.
+3. Em Authentication, Domínios autorizados, adicionar `vault.msr-dev.com.br`.
 4. Criar o Firestore em modo produção e colar as regras acima.
 5. Registrar um app Web e copiar o objeto de configuração para `firebase-config.js`.
 
@@ -123,7 +123,7 @@ Feito em 16/11/2026: projeto `dev-vault` (ID `dev-vault-ee7ab`), plano **Spark**
 4. Editar, excluir, etiquetas e filtro por tipo.
 5. Atalhos de teclado, ordenação por mais usados e ajustes visuais.
 6. Senhas: senha mestra, criptografia, desbloqueio e bloqueio.
-7. Deploy no GitHub Pages e teste fora de casa.
+7. Deploy no GitHub Pages com o subdomínio `vault.msr-dev.com.br` e teste fora de casa. Ordem: verificar o domínio `msr-dev.com.br` na conta do GitHub (registro TXT, evita que outra conta "sequestre" o subdomínio), criar o repositório e ativar o Pages, adicionar o domínio personalizado no repositório, criar o CNAME `vault` → `mateusrad.github.io` no Registro.br, ativar "Enforce HTTPS" e autorizar o domínio no Firebase.
 8. Integração com o Claude Code (abaixo).
 
 ## Integração com o Claude Code (etapa 8)

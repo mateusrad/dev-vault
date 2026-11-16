@@ -17,16 +17,16 @@ Atualizado em 16/11/2026.
 
 ## Falta (etapas da especificação)
 
-2. Projetos e itens com passos ← **próximo passo**
+2. Projetos e itens com passos ← **pronta, falta o Mateus validar** (`js/db.js`, sidebar, cards, formulário com passos). Testados: layout desktop e celular, menu lateral, validação, editor de passos, gravação real (item "Acessar a VPS" no BoxHop) e visual do card com comando e aviso.
 3. Copiar/Abrir e busca
 4. Editar, excluir, etiquetas e filtro por tipo
 5. Atalhos, ordenação por mais usados e ajustes visuais
 6. Senhas: senha mestra e criptografia
-7. Deploy no GitHub Pages (adicionar `mateusrad.github.io` aos domínios autorizados)
+7. Deploy no GitHub Pages em `vault.msr-dev.com.br` (passos na especificação)
 8. Integração com o Claude Code
 
 ## Pendências
 
-- Iniciar o repositório Git (`git init`), com confirmação.
+- Git iniciado (branch `main`, primeiro commit `81b449a`). Falta criar o repositório no GitHub e fazer o push (antes da etapa 7).
 - 🕓 Validação de campos nas regras do Firestore (tipos e campos permitidos) e testes das regras no emulador.
 - Backups do Firestore exigem o plano Blaze: usar o export em JSON (ideia para depois) como backup.
